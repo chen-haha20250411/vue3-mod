@@ -181,7 +181,22 @@ module.exports = [
         data: {
           roles: ['admin'],
           name: 'Super Admin',
-          avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif'
+          avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif',
+          permissions: [
+            {
+              menuId: 1,
+              menuName: '投标数据',
+              menuURL: '#',
+              subMenuList: [
+                {
+                  menuId: 2,
+                  menuName: '招标信息',
+                  menuURL: 'biddingInfo/list'
+                }
+              ]
+            }
+          ],
+          permissionList: ['oper/list', 'zhongbiao/list']
         }
       }
     }

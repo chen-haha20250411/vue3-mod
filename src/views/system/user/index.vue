@@ -39,31 +39,7 @@
           <span>{{ scope.row.email || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="公司名称" width="180px" align="center">
-        <template v-slot="scope">
-          <span>{{ scope.row.companyName || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="法人" width="100px" align="center">
-        <template v-slot="scope">
-          <span>{{ scope.row.corporate || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="经办人" width="100px" align="center">
-        <template v-slot="scope">
-          <span>{{ scope.row.jbrxm || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="经办人电话" width="130px" align="center">
-        <template v-slot="scope">
-          <span>{{ scope.row.jbrphone || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="统一社会信用代码" width="160px" align="center">
-        <template v-slot="scope">
-          <span>{{ scope.row.unifiedCode || '-' }}</span>
-        </template>
-      </el-table-column>
+      
       <el-table-column label="角色" width="120px" align="center">
         <template v-slot="scope">
           <el-tag>{{ scope.row.roleName || '未分配' }}</el-tag>
@@ -79,13 +55,16 @@
           <span>{{ scope.row.lastTime || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280px" align="center" fixed="right">
+      <el-table-column label="操作" width="370px" align="center" fixed="right">
         <template v-slot="scope">
           <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">
             编辑
           </el-button>
           <el-button type="warning" size="mini" @click="handleAssignRoles(scope.row)">
             分配角色
+          </el-button>
+          <el-button type="info" size="mini" @click="handleResetPassword(scope.row)">
+            重置密码
           </el-button>
           <el-button type="danger" size="mini" @click="handleDelete(scope.row)">
             删除
@@ -211,12 +190,8 @@ export default {
   methods: {
     getAllRoles() {
       getAllRoles().then(res => {
-        console.log('角色列表响应:', res)
         const data = res.data || res
         this.roleList = data.list || data.items || (Array.isArray(data) ? data : [])
-        if (this.roleList.length === 0) {
-          console.warn('角色列表为空')
-        }
       }).catch(err => {
         console.error('获取角色列表失败:', err)
       })
@@ -229,9 +204,7 @@ export default {
         ...(this.listQuery.loginName && this.listQuery.loginName.trim() && { loginName: this.listQuery.loginName.trim() }),
         ...(this.listQuery.roleinfoId && { roleinfoId: this.listQuery.roleinfoId })
       }
-      console.log('请求用户列表，参数:', JSON.stringify(params))
       getUsers(params).then(res => {
-        console.log('用户列表响应:', res)
         const data = res.data || res
         const listData = data.items || data.list || data
         this.list = Array.isArray(listData) ? listData : []
@@ -262,7 +235,6 @@ export default {
       })
     },
     handleUpdate(row) {
-      console.log('handleUpdate row:', row)
       this.temp = {
         operatorId: row.operatorId,
         realName: row.realName,
@@ -274,7 +246,6 @@ export default {
       }
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
-      console.log('dialogFormVisible:', this.dialogFormVisible)
     },
     handleDelete(row) {
       this.$confirm('确认删除该用户?', '提示', {
@@ -290,31 +261,28 @@ export default {
             this.$message.error(res.msg || '删除失败')
           }
         }).catch(err => {
-          console.error('删除用户失败:', err)
-          this.$message.error('删除失败: ' + (err.message || err))
+          this.$message.error('删除失败: ' + (err.msg || err.message || '网络错误'))
         })
       })
     },
     handleAssignRoles(row) {
-      console.log('handleAssignRoles 点击行数据:', row)
       this.currentUser = row
       this.temp.roleinfoId = row.roleinfoId
       this.dialogRoleVisible = true
-      console.log('dialogRoleVisible 设置为:', this.dialogRoleVisible)
-      console.log('当前角色列表:', this.roleList)
-      console.log('当前角色ID:', this.temp.roleinfoId)
     },
     createData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           createUser(this.temp).then(res => {
-            if (res.code === 200) {
+            if (res.code === 200 || res.success || res.code === 0) {
               this.dialogFormVisible = false
               this.$message.success(res.msg || '创建成功')
               this.getList()
             } else {
               this.$message.error(res.msg || '创建失败')
             }
+          }).catch(err => {
+            this.$message.error('创建失败: ' + (err.msg || err.message || '网络错误'))
           })
         }
       })
@@ -323,27 +291,24 @@ export default {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           updateUser(this.temp).then(res => {
-            if (res.code === 200) {
+            if (res.code === 200 || res.success || res.code === 0) {
               this.dialogFormVisible = false
               this.$message.success(res.msg || '更新成功')
               this.getList()
             } else {
               this.$message.error(res.msg || '更新失败')
             }
+          }).catch(err => {
+            this.$message.error('更新失败: ' + (err.msg || err.message || '网络错误'))
           })
         }
       })
     },
     updateUserRoles() {
-      console.log('分配角色参数:', {
-        operatorId: this.currentUser.operatorId,
-        roleinfoId: this.temp.roleinfoId
-      })
       grantUserRoles({
         operatorId: this.currentUser.operatorId,
         roleinfoId: this.temp.roleinfoId
       }).then(res => {
-        console.log('角色分配响应:', res)
         if (res.code === 200 || res.success) {
           this.dialogRoleVisible = false
           this.$message.success(res.msg || '角色分配成功')
@@ -352,8 +317,24 @@ export default {
           this.$message.error(res.msg || '角色分配失败')
         }
       }).catch(err => {
-        console.error('角色分配失败:', err)
-        this.$message.error('角色分配失败: ' + (err.message || err))
+        this.$message.error('角色分配失败: ' + (err.msg || err.message || '网络错误'))
+      })
+    },
+    handleResetPassword(row) {
+      this.$confirm('确认重置该用户密码?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        resetPassword(row.operatorId).then(res => {
+          if (res.code === 200 || res.success) {
+            this.$message.success(res.msg || '密码重置成功')
+          } else {
+            this.$message.error(res.msg || '密码重置失败')
+          }
+        }).catch(err => {
+          this.$message.error('密码重置失败: ' + (err.msg || err.message || '网络错误'))
+        })
       })
     },
     resetTemp() {

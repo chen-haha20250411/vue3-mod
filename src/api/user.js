@@ -42,8 +42,9 @@ export function updateUser(data) {
 
 export function deleteUser(operatorId) {
   return request({
-    url: `/admin/oper/${operatorId}`,
-    method: 'delete'
+    url: '/admin/oper/delOper',
+    method: 'post',
+    data: { operatorId }
   })
 }
 

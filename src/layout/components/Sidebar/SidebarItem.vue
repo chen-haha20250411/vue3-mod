@@ -32,15 +32,25 @@ import FixiOSBug from './FixiOSBug'
 
 // Simple path resolve function to replace Node.js path module
 function resolvePath(basePath, routePath) {
-  if (!basePath || basePath === '/') return routePath
-  if (!routePath || routePath === '/') return basePath
+  // 如果 routePath 是空或只有一个 '/'，直接返回 basePath
+  if (!routePath || routePath === '/' || routePath === '') {
+    return basePath || '/'
+  }
   
-  // Remove trailing slash from basePath
+  // 如果 basePath 是空或 '/', 直接返回 routePath
+  if (!basePath || basePath === '/') {
+    return routePath.startsWith('/') ? routePath : '/' + routePath
+  }
+  
+  // 移除 basePath 末尾的 '/'
   const base = basePath.replace(/\/$/, '')
-  // Remove leading slash from routePath
+  // 确保 routePath 没有前导 '/'
   const route = routePath.replace(/^\//, '')
   
-  return base + '/' + route
+  // 返回完整的绝对路径
+  const result = base + '/' + route
+  console.log('resolvePath:', { basePath, routePath, result })
+  return result.startsWith('/') ? result : '/' + result
 }
 
 export default {
@@ -79,9 +89,11 @@ export default {
           return true
         }
       })
+      console.log('hasOneShowingChild:', parent.path, 'showingChildren:', showingChildren.map(c => c.path))
 
       // When there is only one child router, the child router is displayed by default
       if (showingChildren.length === 1) {
+        console.log('Only one child, path:', this.onlyOneChild.path, 'fullPath:', this.resolvePath(this.onlyOneChild.path))
         return true
       }
 
@@ -100,7 +112,9 @@ export default {
       if (isExternal(this.basePath)) {
         return this.basePath
       }
-      return resolvePath(this.basePath, routePath)
+      const resolved = resolvePath(this.basePath, routePath)
+      console.log('resolvePath basePath:', this.basePath, 'routePath:', routePath, 'resolved:', resolved)
+      return resolved
     }
   }
 }

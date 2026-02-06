@@ -47,6 +47,11 @@ module.exports = {
         target: 'http://localhost:8090',
         changeOrigin: true,
         logLevel: 'debug'
+      },
+      '/api': {
+        target: 'http://localhost:8090',
+        changeOrigin: true,
+        logLevel: 'debug'
       }
     }
   },

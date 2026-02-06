@@ -4,6 +4,7 @@ const systemRouter = {
   path: '/system',
   component: Layout,
   redirect: '/system/user',
+  alwaysShow: true,
   name: 'System',
   meta: {
     title: '系统管理',
@@ -30,11 +31,49 @@ const systemRouter = {
       }
     },
     {
+      path: 'role/auth',
+      component: () => import('@/views/system/role/auth'),
+      name: 'RoleAuth',
+      hidden: true,
+      meta: {
+        title: '角色授权',
+        roles: ['admin'],
+        activeMenu: '/system/role'
+      }
+    },
+    {
       path: 'data-permission',
       component: () => import('@/views/system/data-permission/index'),
       name: 'DataPermission',
       meta: {
         title: '数据权限',
+        roles: ['admin']
+      }
+    },
+    {
+      path: 'page-permission',
+      component: () => import('@/views/permission/page'),
+      name: 'PagePermission',
+      meta: {
+        title: '页面权限',
+        roles: ['admin']
+      }
+    },
+    {
+      path: 'directive-permission',
+      component: () => import('@/views/permission/directive'),
+      name: 'DirectivePermission',
+      meta: {
+        title: '指令权限',
+        roles: ['admin']
+      }
+    },
+    {
+      path: 'role-permission',
+      component: () => import('@/views/permission/role'),
+      name: 'RolePermission',
+      meta: {
+        title: '角色权限',
         roles: ['admin']
       }
     }

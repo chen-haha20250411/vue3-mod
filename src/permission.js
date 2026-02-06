@@ -20,34 +20,67 @@ router.beforeEach(async(to, from, next) => {
   // determine whether the user has logged in
   const hasToken = getToken()
 
+  console.log('=== router.beforeEach ===')
+  console.log('to.path:', to.path)
+  console.log('hasToken:', !!hasToken)
+  console.log('store.getters.roles:', store.getters.roles)
+  console.log('hasRoles:', !!(store.getters.roles && store.getters.roles.length > 0))
+
   if (hasToken) {
     if (to.path === '/login') {
       // if is logged in, redirect to the home page
       next({ path: '/' })
-      NProgress.done() // hack: https://github.com/PanJiaChen/vue-element-admin/pull/2939
+      NProgress.done()
     } else {
       // determine whether the user has obtained his permission roles through getInfo
       const hasRoles = store.getters.roles && store.getters.roles.length > 0
       if (hasRoles) {
+        console.log('Has roles, allowing navigation')
+        const routes = router.getRoutes().map(r => ({ path: r.path, name: r.name }))
+        
+        // 检查目标路由是否存在
+        const targetRoute = routes.find(r => r.path === to.path)
+        console.log('Target route exists:', !!targetRoute, to.path)
+        
+        if (!targetRoute) {
+          // 路由不存在，尝试查找子路由
+          const parentRoute = routes.find(r => {
+            if (!r.path.endsWith('/')) {
+              return to.path.startsWith(r.path + '/')
+            }
+            return false
+          })
+          console.log('Parent route:', parentRoute)
+        }
+        
         next()
       } else {
         try {
           // get user info
           // note: roles must be a object array! such as: ['admin'] or ,['developer','editor']
-          const { roles } = await store.dispatch('user/getInfo')
+          const { roles, menus } = await store.dispatch('user/getInfo')
 
-          // generate accessible routes map based on roles
-          const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
           console.log('User roles:', roles)
-          console.log('Generated routes:', accessRoutes.map(r => r.path))
+          console.log('menus count:', menus?.length || 0)
+
+          // generate accessible routes map based on roles and menus
+          const accessRoutes = await store.dispatch('permission/generateRoutes', { roles, menus })
+          console.log('Generated routes:', accessRoutes.map(r => ({ path: r.path, children: r.children?.map(c => c.path) })))
 
           // dynamically add accessible routes (Vue Router 4)
-          accessRoutes.forEach(route => router.addRoute(route))
+          console.log('Before addRoute, current routes:', router.getRoutes().map(r => r.path))
+          accessRoutes.forEach((route, index) => {
+            console.log(`Adding route ${index + 1}:`, route.path)
+            router.addRoute(route)
+          })
+          console.log('After addRoute, current routes:', router.getRoutes().map(r => r.path))
 
           // hack method to ensure that addRoutes is complete
           // set the replace: true, so the navigation will not leave a history record
+          console.log('Calling next() with to:', to.path)
           next({ ...to, replace: true })
         } catch (error) {
+          console.error('getInfo error:', error)
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
           ElMessage.error(error || 'Has Error')
@@ -70,7 +103,12 @@ router.beforeEach(async(to, from, next) => {
   }
 })
 
-router.afterEach(() => {
+router.afterEach((to, from) => {
   // finish progress bar
   NProgress.done()
+  
+  // Check if the current route has a 403 error
+  if (to.meta && to.meta.noPermission) {
+    // Already handled
+  }
 })

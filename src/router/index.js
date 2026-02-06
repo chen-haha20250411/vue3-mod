@@ -4,6 +4,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Layout from '@/layout'
 
 /* Router Modules */
+import operRouter from './modules/oper'
 import zhongbiaoRouter from './modules/zhongbiao'
 import biddingInfoRouter from './modules/biddingInfo'
 import systemRouter from './modules/system'
@@ -67,13 +68,18 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/403',
+    component: () => import('@/views/error-page/403'),
+    hidden: true
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
     children: [
       {
         path: 'dashboard',
-        component: () => import('@/views/dashboard/console/index'),
+        component: () => import('@/views/dashboard/admin/index'),
         name: 'Dashboard',
         meta: { title: '首页', icon: 'dashboard', affix: true }
       }
@@ -127,50 +133,11 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
-    {
-      path: '/permission',
-      component: Layout,
-      redirect: '/permission/page',
-      alwaysShow: true,
-      name: 'Permission',
-      meta: {
-        title: '权限管理',
-        icon: 'lock',
-        roles: ['admin', 'editor']
-      },
-      children: [
-        {
-          path: 'page',
-          component: () => import('@/views/permission/page'),
-          name: 'PagePermission',
-          meta: {
-            title: '页面权限',
-            roles: ['admin']
-          }
-        },
-        {
-          path: 'directive',
-          component: () => import('@/views/permission/directive'),
-          name: 'DirectivePermission',
-          meta: {
-            title: '指令权限'
-          }
-        },
-        {
-          path: 'role',
-          component: () => import('@/views/permission/role'),
-          name: 'RolePermission',
-          meta: {
-            title: '角色权限',
-            roles: ['admin']
-          }
-        }
-      ]
-    },
+    operRouter,
     systemRouter,
     zhongbiaoRouter,
     biddingInfoRouter
-]
+  ]
 
 const initRouter = () => createRouter({
   history: createWebHashHistory(),
@@ -179,6 +146,12 @@ const initRouter = () => createRouter({
 })
 
 const router = initRouter()
+
+// 添加路由错误处理
+router.onError(error => {
+  console.error('Router error:', error)
+  NProgress.done()
+})
 
 export function resetRouter() {
   // Vue Router 4: remove all dynamic routes and re-add constant routes

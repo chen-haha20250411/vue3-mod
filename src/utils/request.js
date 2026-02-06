@@ -2,6 +2,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
+import router from '@/router'
 
 // create an axios instance
 const service = axios.create({
@@ -10,11 +11,15 @@ const service = axios.create({
   withCredentials: true,
   crossDomain: true
 })
-// 设置axios为form-data
+// 默认使用form-data格式，特定接口可以覆盖
 service.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
-service.defaults.headers.get['Content-Type'] = 'application/x-www-form-urlencoded'
 service.defaults.withCredentials = true
-service.defaults.transformRequest = [function(data) {
+service.defaults.transformRequest = [function(data, headers) {
+  // 如果Content-Type是application/json，直接返回JSON字符串
+  if (headers && headers['Content-Type'] === 'application/json') {
+    return JSON.stringify(data)
+  }
+  // 否则转换为form-data格式
   let ret = ''
   for (const it in data) {
     ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
@@ -118,8 +123,33 @@ service.interceptors.response.use(
     console.log('err', error) // for debug
     console.log('err.response', error.response)
     console.log('err.config', error.config)
+    
+    // 构造更友好的错误信息
+    let message = error.message
+    if (error.response) {
+      // 服务器返回了错误状态码
+      const status = error.response.status
+      if (status === 404) {
+        message = '请求接口不存在(404)，请联系管理员'
+      } else if (status === 500) {
+        message = '服务器内部错误(500)，请联系管理员'
+      } else if (status === 403) {
+        message = '没有权限访问该接口(403)'
+        // 跳转到403页面
+        router.push('/403')
+      } else if (status === 401) {
+        message = '未授权，请重新登录(401)'
+      } else {
+        message = `服务器错误(${status}): ${error.response.statusText}`
+      }
+    } else if (error.message && error.message.includes('Network')) {
+      message = '网络异常，请检查网络连接或后端服务是否启动'
+    } else if (error.message && error.message.includes('timeout')) {
+      message = '请求超时，请稍后重试'
+    }
+    
     ElMessage({
-      message: error.message,
+      message: message,
       type: 'error',
       duration: 5 * 1000
     })

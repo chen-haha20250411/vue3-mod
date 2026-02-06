@@ -13,32 +13,40 @@
         </div>
         <el-form ref="loginForm" :model="loginForm" :rules="loginRules" @submit.native.prevent="handleLogin">
           <el-form-item prop="username">
-            <el-input
-              v-model="loginForm.username"
-              placeholder="请输入用户名"
-              prefix-icon="el-icon-user"
-            />
+            <div class="input-wrapper">
+              <el-icon class="input-icon"><User /></el-icon>
+              <el-input
+                v-model="loginForm.username"
+                placeholder="请输入用户名"
+                class="input-field"
+              />
+            </div>
           </el-form-item>
           <el-form-item prop="password">
-            <el-input
-              v-model="loginForm.password"
-              :type="passwordType"
-              placeholder="请输入密码"
-              prefix-icon="el-icon-lock"
-              @keyup.enter.native="handleLogin"
-            >
-              <template #suffix>
-                <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" class="show-pwd" @click="showPwd" />
-              </template>
-            </el-input>
+            <div class="input-wrapper">
+              <el-icon class="input-icon"><Lock /></el-icon>
+              <el-input
+                v-model="loginForm.password"
+                :type="passwordType"
+                placeholder="请输入密码"
+                class="input-field"
+              >
+                <template #suffix>
+                  <el-icon class="show-pwd" @click="showPwd">
+                    <View v-if="passwordType === 'password'" />
+                    <Hide v-else />
+                  </el-icon>
+                </template>
+              </el-input>
+            </div>
           </el-form-item>
           <el-form-item prop="verifyCode">
-            <div class="verify-code-wrapper">
+            <div class="input-wrapper">
+              <el-icon class="input-icon"><Grid /></el-icon>
               <el-input
                 v-model="loginForm.verifyCode"
                 placeholder="请输入验证码"
-                prefix-icon="el-icon-picture-outline"
-                class="verify-code-input"
+                class="input-field verify-field"
                 @keyup.enter.native="handleLogin"
               />
               <img 
@@ -61,9 +69,17 @@
 
 <script>
 import * as api from '@/api/login'
+import { User, Lock, View, Hide, Grid } from '@element-plus/icons-vue'
 
 export default {
   name: 'Login',
+  components: {
+    User,
+    Lock,
+    View,
+    Hide,
+    Grid
+  },
   data() {
     return {
       loginForm: {
@@ -139,7 +155,7 @@ export default {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f0f2f5;
+  background: transparent;
 }
 
 .login-container {
@@ -201,45 +217,59 @@ export default {
   margin-bottom: 20px;
 }
 
-.login-form >>> .el-input {
+.input-wrapper {
+  display: flex;
+  align-items: center;
   width: 100%;
   height: 46px;
-}
-
-.login-form >>> .el-input__inner {
-  width: 100%;
-  height: 46px;
-  line-height: 46px;
   border: 1px solid #e8e8e8;
   border-radius: 8px;
-  font-size: 15px;
   background: #fff;
-  color: #333;
-  padding-left: 45px;
-  padding-right: 15px;
   transition: all 0.3s;
 }
 
-.login-form >>> .el-input__inner::placeholder {
-  color: #bbb;
-}
-
-.login-form >>> .el-input__inner:hover {
+.input-wrapper:hover {
   border-color: #c0c0c0;
 }
 
-.login-form >>> .el-input__inner:focus {
+.input-wrapper:focus-within {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.login-form >>> .el-input__prefix {
-  left: 15px;
+.input-icon {
+  width: 20px;
+  height: 20px;
+  margin-left: 15px;
+  margin-right: 12px;
   color: #999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
 }
 
-.login-form >>> .el-input__suffix {
-  right: 12px;
+.input-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.input-field .el-input__inner {
+  border: none;
+  outline: none;
+  background: transparent;
+  height: 44px;
+  line-height: 44px;
+  padding: 0 15px 0 0;
+  font-size: 15px;
+  color: #333;
+}
+
+.input-field .el-input__inner::placeholder {
+  color: #bbb;
 }
 
 .show-pwd {
@@ -247,18 +277,24 @@ export default {
   color: #999;
   font-size: 16px;
   transition: color 0.3s;
+  margin-right: 10px;
 }
 
 .show-pwd:hover {
   color: #667eea;
 }
 
+.verify-field {
+  flex: 1;
+  min-width: 0;
+}
+
 .captcha-img {
-  width: 120px;
-  height: 44px;
-  border-radius: 6px;
+  width: 100px;
+  height: 36px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: opacity 0.3s;
+  margin: 5px 10px 5px 0;
   border: 1px solid #dcdfe6;
 }
 
@@ -270,22 +306,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 120px;
-  height: 44px;
+  width: 100px;
+  height: 36px;
+  margin: 5px 10px 5px 0;
   background: #f5f7fa;
-  border-radius: 6px;
+  border-radius: 4px;
   color: #909399;
   cursor: pointer;
   font-size: 12px;
-}
-
-.verify-code-wrapper {
-  display: flex;
-  gap: 12px;
-}
-
-.verify-code-input {
-  flex: 1;
 }
 
 .login-btn {

@@ -19,7 +19,10 @@ export function createRole(data) {
   return request({
     url: '/admin/role/addRole',
     method: 'post',
-    params: data
+    data: data,
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
 }
 
@@ -27,7 +30,10 @@ export function updateRole(data) {
   return request({
     url: '/admin/role/updateroleinfo',
     method: 'post',
-    params: data
+    data: data,
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
 }
 
@@ -42,6 +48,14 @@ export function deleteRole(roleInfoId) {
 export function getRoleTreeEdit(roleInfoId) {
   return request({
     url: '/admin/role/getRoleTreeEdit',
+    method: 'post',
+    params: { roleInfoId }
+  })
+}
+
+export function getRoleInfo(roleInfoId) {
+  return request({
+    url: '/admin/role/getRoleInfo',
     method: 'post',
     params: { roleInfoId }
   })

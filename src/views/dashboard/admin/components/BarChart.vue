@@ -32,7 +32,12 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      this.initChart()
+      // 延迟初始化，确保 DOM 完全准备好
+      setTimeout(() => {
+        if (this.$el && this.$el.clientHeight > 0) {
+          this.initChart()
+        }
+      }, 100)
     })
   },
   beforeUnmount() {
@@ -44,9 +49,15 @@ export default {
   },
   methods: {
     initChart() {
-      this.chart = echarts.init(this.$el, 'macarons')
+      if (!this.$el || this.$el.clientHeight === 0) {
+        console.warn('[BarChart] DOM not ready, skipping initialization')
+        return
+      }
+      
+      try {
+        this.chart = echarts.init(this.$el, 'macarons')
 
-      this.chart.setOption({
+        this.chart.setOption({
         tooltip: {
           trigger: 'axis',
           axisPointer: { // 坐标轴指示器，坐标轴触发有效
@@ -96,6 +107,9 @@ export default {
           animationDuration
         }]
       })
+      } catch (error) {
+        console.error('[BarChart] Failed to initialize chart:', error)
+      }
     }
   }
 }

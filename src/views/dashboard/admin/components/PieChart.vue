@@ -30,7 +30,12 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      this.initChart()
+      // 延迟初始化，确保 DOM 完全准备好
+      setTimeout(() => {
+        if (this.$el && this.$el.clientHeight > 0) {
+          this.initChart()
+        }
+      }, 100)
     })
   },
   beforeUnmount() {

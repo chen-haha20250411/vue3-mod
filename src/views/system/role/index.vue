@@ -48,56 +48,12 @@
 
     <pagination v-show="total>0" :total="total" :page="listQuery.currPageNo" :limit="listQuery.limit" @pagination="handlePagination" />
 
-    <el-dialog :title="textMap[dialogStatus]" v-model="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="100px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="角色名称" prop="roleName">
-          <el-input v-model="temp.roleName" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="temp.remark" type="textarea" :rows="3" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="dialogStatus === 'create' ? createData() : updateData()">
-          确定
-        </el-button>
-      </div>
-    </el-dialog>
 
-    <el-dialog title="分配权限" v-model="dialogPermissionVisible" width="600px">
-      <div style="margin-bottom: 15px;">
-        <strong>角色：{{ currentRole.roleName }}</strong>
-      </div>
-      <el-tree
-        v-if="permissionTreeData.length > 0"
-        ref="permissionTree"
-        :data="permissionTreeData"
-        :props="defaultProps"
-        show-checkbox
-        node-key="id"
-        :default-checked-keys="checkedPermissions"
-        class="permission-tree"
-      />
-      <div v-else class="no-permission">
-        暂无权限数据
-      </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogPermissionVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="updateRolePermissions">
-          确定
-        </el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getRoles, createRole, updateRole, deleteRole, getRoleTreeEdit } from '@/api/role'
+import { getRoles, deleteRole } from '@/api/role'
 import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination'
 
@@ -115,28 +71,6 @@ export default {
         currPageNo: 1,
         limit: 20,
         roleName: undefined
-      },
-      temp: {
-        roleInfoId: undefined,
-        roleName: '',
-        remark: ''
-      },
-      dialogFormVisible: false,
-      dialogPermissionVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: '编辑角色',
-        create: '新增角色'
-      },
-      rules: {
-        roleName: [{ required: true, message: '角色名称必填', trigger: 'blur' }]
-      },
-      currentRole: {},
-      permissionTreeData: [],
-      checkedPermissions: [],
-      defaultProps: {
-        children: 'children',
-        label: 'name'
       }
     }
   },
@@ -171,21 +105,15 @@ export default {
       this.getList()
     },
     handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+      // 跳转到角色授权页面（新增模式）
+      this.$router.push('/system/role/auth')
     },
     handleUpdate(row) {
-      this.temp = {
-        roleInfoId: row.roleInfoId,
-        roleName: row.roleName,
-        remark: row.remark
-      }
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
+      // 跳转到角色授权页面（编辑模式）
+      this.$router.push({
+        path: '/system/role/auth',
+        query: { roleInfoId: row.roleInfoId }
+      })
     },
     handleDelete(row) {
       this.$confirm('确认删除该角色?', '提示', {
@@ -193,90 +121,39 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        deleteRole(row.roleInfoId).then(() => {
-          this.$message.success('删除成功')
-          this.getList()
+        console.log('正在删除角色:', row.roleInfoId)
+        deleteRole(row.roleInfoId).then(res => {
+          console.log('删除响应:', res)
+          if (res.code === 200 || res.success) {
+            this.$message.success(res.msg || '删除成功')
+            this.getList()
+          } else {
+            this.$message.error(res.msg || '删除失败')
+          }
+        }).catch(err => {
+          console.error('删除错误:', err)
+          // 显示详细错误信息
+          let errorMsg = '删除失败'
+          if (err.response) {
+            // 服务器返回了错误状态码
+            errorMsg = `服务器错误(${err.response.status}): ${err.response.statusText}`
+          } else if (err.message && err.message.includes('Network')) {
+            errorMsg = '网络异常，请检查网络连接或后端服务是否启动'
+          } else if (err.msg) {
+            errorMsg = err.msg
+          } else if (err.message) {
+            errorMsg = err.message
+          }
+          this.$message.error(errorMsg)
         })
       })
     },
     handlePermission(row) {
-      this.currentRole = row
-      this.checkedPermissions = []
-      this.permissionTreeData = []
-      this.dialogPermissionVisible = true
-
-      getRoleTreeEdit(row.roleInfoId).then(res => {
-        if (res.data && res.data.rootList) {
-          this.permissionTreeData = this.buildTreeData(res.data.rootList)
-          this.checkedPermissions = this.getCheckedKeys(res.data.rootList)
-        }
+      // 跳转到角色授权页面
+      this.$router.push({
+        path: '/system/role/auth',
+        query: { roleInfoId: row.roleInfoId }
       })
-    },
-    buildTreeData(data) {
-      return data.map(item => ({
-        id: item.id,
-        name: item.name,
-        children: item.children ? this.buildTreeData(item.children) : []
-      }))
-    },
-    getCheckedKeys(data) {
-      const keys = []
-      const traverse = (nodes) => {
-        nodes.forEach(node => {
-          if (node.checked) {
-            keys.push(node.id)
-          }
-          if (node.children) {
-            traverse(node.children)
-          }
-        })
-      }
-      traverse(data)
-      return keys
-    },
-    createData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          createRole(this.temp).then(() => {
-            this.dialogFormVisible = false
-            this.$message.success('创建成功')
-            this.getList()
-          })
-        }
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          updateRole(this.temp).then(() => {
-            this.dialogFormVisible = false
-            this.$message.success('更新成功')
-            this.getList()
-          })
-        }
-      })
-    },
-    updateRolePermissions() {
-      const checkedKeys = this.$refs.permissionTree.getCheckedKeys()
-      const halfCheckedKeys = this.$refs.permissionTree.getHalfCheckedKeys()
-      const authStr = [...checkedKeys, ...halfCheckedKeys].join(',')
-
-      updateRole({
-        roleInfoId: this.currentRole.roleInfoId,
-        roleName: this.currentRole.roleName,
-        remark: this.currentRole.remark,
-        authStr: authStr
-      }).then(() => {
-        this.dialogPermissionVisible = false
-        this.$message.success('权限更新成功')
-      })
-    },
-    resetTemp() {
-      this.temp = {
-        roleInfoId: undefined,
-        roleName: '',
-        remark: ''
-      }
     }
   }
 }
@@ -285,14 +162,5 @@ export default {
 <style scoped>
 .filter-item {
   margin-right: 10px;
-}
-.permission-tree {
-  max-height: 400px;
-  overflow-y: auto;
-}
-.no-permission {
-  text-align: center;
-  padding: 40px;
-  color: #999;
 }
 </style>
