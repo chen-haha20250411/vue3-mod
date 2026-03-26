@@ -1,114 +1,74 @@
 import router from './router'
 import store from './store'
 import { ElMessage } from 'element-plus'
-import NProgress from 'nprogress' // progress bar
-import 'nprogress/nprogress.css' // progress bar style
-import { getToken } from '@/utils/auth' // get token from cookie
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+import { getToken } from '@/utils/auth'
 import getPageTitle from '@/utils/get-page-title'
 
-NProgress.configure({ showSpinner: false }) // NProgress Configuration
+NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/login', '/auth-redirect'] // no redirect whitelist
+const whiteList = ['/login', '/auth-redirect']
 
 router.beforeEach(async(to, from, next) => {
-  // start progress bar
   NProgress.start()
-
-  // set page title
   document.title = getPageTitle(to.meta.title)
 
-  // determine whether the user has logged in
   const hasToken = getToken()
-
-  console.log('=== router.beforeEach ===')
-  console.log('to.path:', to.path)
-  console.log('hasToken:', !!hasToken)
-  console.log('store.getters.roles:', store.getters.roles)
-  console.log('hasRoles:', !!(store.getters.roles && store.getters.roles.length > 0))
+  console.log('[Router Guard] hasToken:', !!hasToken, 'to.path:', to.path, 'to:', to)
 
   if (hasToken) {
     if (to.path === '/login') {
-      // if is logged in, redirect to the home page
-      next({ path: '/' })
+      console.log('[Router Guard] Already logged in, redirect to /dashboard')
+      next({ path: '/dashboard' })
       NProgress.done()
     } else {
-      // determine whether the user has obtained his permission roles through getInfo
       const hasRoles = store.getters.roles && store.getters.roles.length > 0
+      console.log('[Router Guard] hasRoles:', hasRoles, 'store.getters.roles:', store.getters.roles)
+
       if (hasRoles) {
-        console.log('Has roles, allowing navigation')
-        const routes = router.getRoutes().map(r => ({ path: r.path, name: r.name }))
-        
-        // 检查目标路由是否存在
-        const targetRoute = routes.find(r => r.path === to.path)
-        console.log('Target route exists:', !!targetRoute, to.path)
-        
-        if (!targetRoute) {
-          // 路由不存在，尝试查找子路由
-          const parentRoute = routes.find(r => {
-            if (!r.path.endsWith('/')) {
-              return to.path.startsWith(r.path + '/')
-            }
-            return false
-          })
-          console.log('Parent route:', parentRoute)
-        }
-        
+        console.log('[Router Guard] Already have roles, proceed')
         next()
       } else {
         try {
-          // get user info
-          // note: roles must be a object array! such as: ['admin'] or ,['developer','editor']
+          console.log('[Router Guard] Calling getInfo...')
           const { roles, menus } = await store.dispatch('user/getInfo')
+          console.log('[Router Guard] getInfo success, roles:', roles, 'menus count:', menus?.length)
 
-          console.log('User roles:', roles)
-          console.log('menus count:', menus?.length || 0)
-
-          // generate accessible routes map based on roles and menus
           const accessRoutes = await store.dispatch('permission/generateRoutes', { roles, menus })
-          console.log('Generated routes:', accessRoutes.map(r => ({ path: r.path, children: r.children?.map(c => c.path) })))
+          console.log('[Router Guard] generateRoutes success, routes count:', accessRoutes?.length)
+          console.log('[Router Guard] Routes to add:', accessRoutes)
 
-          // dynamically add accessible routes (Vue Router 4)
-          console.log('Before addRoute, current routes:', router.getRoutes().map(r => r.path))
           accessRoutes.forEach((route, index) => {
-            console.log(`Adding route ${index + 1}:`, route.path)
+            console.log(`[Router Guard] Adding route ${index}:`, route.path, route)
             router.addRoute(route)
           })
-          console.log('After addRoute, current routes:', router.getRoutes().map(r => r.path))
+          console.log('[Router Guard] addRoutes done, current routes:', router.getRoutes())
 
-          // hack method to ensure that addRoutes is complete
-          // set the replace: true, so the navigation will not leave a history record
-          console.log('Calling next() with to:', to.path)
-          next({ ...to, replace: true })
+          const redirect = to.query.redirect || '/dashboard'
+          console.log('[Router Guard] Redirecting to:', redirect)
+          next({ path: redirect, replace: true })
         } catch (error) {
-          console.error('getInfo error:', error)
-          // remove token and go to login page to re-login
+          console.error('[Router Guard] Error:', error)
           await store.dispatch('user/resetToken')
-          ElMessage.error(error || 'Has Error')
+          ElMessage.error(error || '获取用户信息失败')
           next(`/login?redirect=${to.path}`)
           NProgress.done()
         }
       }
     }
   } else {
-    /* has no token*/
-
     if (whiteList.indexOf(to.path) !== -1) {
-      // in the free login whitelist, go directly
+      console.log('[Router Guard] No token, but in whitelist, proceed')
       next()
     } else {
-      // other pages that do not have permission to access are redirected to the login page.
+      console.log('[Router Guard] No token, redirect to login')
       next(`/login?redirect=${to.path}`)
       NProgress.done()
     }
   }
 })
 
-router.afterEach((to, from) => {
-  // finish progress bar
+router.afterEach(() => {
   NProgress.done()
-  
-  // Check if the current route has a 403 error
-  if (to.meta && to.meta.noPermission) {
-    // Already handled
-  }
 })

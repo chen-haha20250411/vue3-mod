@@ -6,12 +6,12 @@ function resolve(dir) {
   return path.join(__dirname, dir)
 }
 
-const name = defaultSettings.title || 'vue Element Admin'
+const name = defaultSettings.title || 'Saturn Report System'
 
-const port = process.env.port || process.env.npm_config_port || 9527
+const port = process.env.port || process.env.npm_config_port || 9528
 
 module.exports = {
-  publicPath: '/',
+  publicPath: './',
   outputDir: 'dist',
   assetsDir: 'static',
   lintOnSave: false,
@@ -36,7 +36,7 @@ module.exports = {
     },
     proxy: {
       '/dev-api': {
-        target: 'http://localhost:8090',
+        target: 'http://localhost:8089',
         changeOrigin: true,
         pathRewrite: {
           '^/dev-api': ''
@@ -44,12 +44,12 @@ module.exports = {
         logLevel: 'debug'
       },
       '/admin': {
-        target: 'http://localhost:8090',
+        target: 'http://localhost:8089',
         changeOrigin: true,
         logLevel: 'debug'
       },
       '/api': {
-        target: 'http://localhost:8090',
+        target: 'http://localhost:8089',
         changeOrigin: true,
         logLevel: 'debug'
       }

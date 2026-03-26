@@ -3,30 +3,22 @@ import Layout from '@/layout'
 const systemRouter = {
   path: '/system',
   component: Layout,
-  redirect: '/system/user',
+  redirect: '/system/role',
   alwaysShow: true,
   name: 'System',
   meta: {
-    title: '系统管理',
-    icon: 'component',
+    title: '系统权限',
+    icon: 'lock',
     roles: ['admin']
   },
   children: [
-    {
-      path: 'user',
-      component: () => import('@/views/system/user/index'),
-      name: 'User',
-      meta: {
-        title: '用户管理',
-        roles: ['admin']
-      }
-    },
     {
       path: 'role',
       component: () => import('@/views/system/role/index'),
       name: 'Role',
       meta: {
-        title: '角色管理',
+        title: '功能角色管理',
+        icon: 'peoples',
         roles: ['admin']
       }
     },
@@ -42,38 +34,52 @@ const systemRouter = {
       }
     },
     {
+      path: 'data-role',
+      component: () => import('@/views/system/data-role/index'),
+      name: 'DataRole',
+      meta: {
+        title: '数据角色管理',
+        icon: 'skill',
+        roles: ['admin']
+      }
+    },
+    {
       path: 'data-permission',
       component: () => import('@/views/system/data-permission/index'),
       name: 'DataPermission',
       meta: {
-        title: '数据权限',
+        title: '数据权限管理',
+        icon: 'cascader',
         roles: ['admin']
       }
     },
     {
-      path: 'page-permission',
-      component: () => import('@/views/permission/page'),
-      name: 'PagePermission',
+      path: 'user-data-role',
+      component: () => import('@/views/system/user-data-role/index'),
+      name: 'UserDataRole',
       meta: {
-        title: '页面权限',
+        title: '用户数据角色分配',
+        icon: 'peoples',
         roles: ['admin']
       }
     },
     {
-      path: 'directive-permission',
-      component: () => import('@/views/permission/directive'),
-      name: 'DirectivePermission',
+      path: 'menu',
+      component: () => import('@/views/system/menu/index'),
+      name: 'Menu',
       meta: {
-        title: '指令权限',
+        title: '菜单管理',
+        icon: 'menu',
         roles: ['admin']
       }
     },
     {
-      path: 'role-permission',
-      component: () => import('@/views/permission/role'),
-      name: 'RolePermission',
+      path: 'user',
+      component: () => import('@/views/enterprise/user/index'),
+      name: 'SystemUser',
       meta: {
-        title: '角色权限',
+        title: '用户管理',
+        icon: 'user',
         roles: ['admin']
       }
     }

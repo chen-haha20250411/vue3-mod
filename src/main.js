@@ -5,6 +5,11 @@ console.error = (...args) => {
   originalConsoleError(...args)
 }
 
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason)
+})
+
 import { createApp } from 'vue'
 import Cookies from 'js-cookie'
 import 'normalize.css/normalize.css'

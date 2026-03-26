@@ -1,5 +1,5 @@
 module.exports = {
-  title: 'Vue Element Admin',
+  title: 'Saturn Report System',
 
   /**
    * @type {boolean} true | false

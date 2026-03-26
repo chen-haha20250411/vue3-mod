@@ -1,14 +1,44 @@
 import { loginByUsername, logout, getUserInfo, getUserRoleInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
+import { ElMessage } from 'element-plus'
 
-const MOCK_LOGIN = false // process.env.NODE_ENV === 'development'
+function convertPermissionsToTree(data) {
+  if (!Array.isArray(data) || data.length === 0) return data
 
-/**
- * 递归提取菜单URL列表
- * @param {Array} menus 菜单数组
- * @returns {Array} URL列表
- */
+  // 检查是否已经是嵌套树形（有 children/subMenuList）
+  const hasNesting = data.some(item => {
+    const children = item.children || item.subMenuList
+    return children && Array.isArray(children) && children.length > 0
+  })
+  if (hasNesting) return data
+
+  // 扁平数据 → 树形，使用 parent_no/parentNo
+  const map = {}
+  const tree = []
+
+  data.forEach(item => {
+    const id = item.menu_id || item.menuId
+    map[id] = { ...item, children: [] }
+  })
+
+  data.forEach(item => {
+    const id = item.menu_id || item.menuId
+    const parentNo = item.parent_no || item.parentNo || item.parentno
+    const node = map[id]
+
+    if (!parentNo || parentNo === 'null' || parentNo === 0) {
+      tree.push(node)
+    } else if (map[parentNo]) {
+      map[parentNo].children.push(node)
+    } else {
+      tree.push(node)
+    }
+  })
+
+  return tree
+}
+
 function extractMenuUrls(menus) {
   const urls = []
   
@@ -16,7 +46,6 @@ function extractMenuUrls(menus) {
     if (!menuList || !Array.isArray(menuList)) return
     
     menuList.forEach(menu => {
-      // 添加当前菜单的URL
       if (menu.menuURL || menu.menuUrl) {
         const url = menu.menuURL || menu.menuUrl
         if (url && url !== '#') {
@@ -24,7 +53,6 @@ function extractMenuUrls(menus) {
         }
       }
       
-      // 递归处理子菜单
       if (menu.subMenuList && menu.subMenuList.length > 0) {
         traverse(menu.subMenuList)
       }
@@ -43,7 +71,8 @@ const state = {
   roles: [],
   login_name: '',
   roleinfoId: '',
-  permissions: [] // 用户的功能权限列表
+  permissions: [],
+  dataPermissions: []
 }
 
 const mutations = {
@@ -70,158 +99,72 @@ const mutations = {
   },
   SET_PERMISSIONS: (state, permissions) => {
     state.permissions = permissions
+  },
+  SET_DATA_PERMISSIONS: (state, dataPermissions) => {
+    state.dataPermissions = dataPermissions
   }
 }
 
 const actions = {
-  // user login
   LoginByUsername({ commit }, userInfo) {
-    if (MOCK_LOGIN) {
-      console.log('Mock login enabled, using mock token')
-      const mockToken = 'mock-token-' + Date.now()
-      commit('SET_TOKEN', mockToken)
-      setToken(mockToken)
-      return Promise.resolve()
-    }
-    const { userName, password, verifyCode, uucode, oldyzmuuid, yzm } = userInfo
+    const { username, password, code, captchaKey } = userInfo
     return new Promise((resolve, reject) => {
-      loginByUsername(userName, password, verifyCode, uucode, oldyzmuuid, yzm).then(response => {
-        const { data } = response
-        const loginName = data.loginName || data.login_name || userName
-        commit('SET_TOKEN', data.token)
-        commit('SET_LOGIN_NAME', loginName)
-        setToken(data.token)
-        commit('SET_ROLEINFO_ID', '')
-        resolve()
-        // 临时注释：等待后端实现 /admin/oper/getroleinfo 接口
-        // return getUserRoleInfo(loginName).then(roleRes => {
-        //   const roleData = roleRes.data
-        //   const roleinfoId = Array.isArray(roleData) && roleData.length > 0 ? roleData[0].roleInfoId : ''
-        //   commit('SET_ROLEINFO_ID', roleinfoId)
-        //   resolve()
-        // })
-      }).catch(error => {
-        reject(error)
-      })
+      loginByUsername(username, password, code, captchaKey)
+        .then(response => {
+          const data = response || {}
+          const token = data.token || data.accessToken || data.access_token || data.Token || ''
+          const loginName = data.loginName || data.login_name || data.username || username
+
+          if (!token) {
+            ElMessage.error('登录失败：未返回token')
+            reject(new Error('未返回token'))
+            return
+          }
+
+          commit('SET_TOKEN', token)
+          commit('SET_LOGIN_NAME', loginName)
+          setToken(token)
+          commit('SET_ROLEINFO_ID', '')
+          resolve()
+        }).catch(error => {
+          ElMessage.error(error?.message || '登录失败')
+          reject(error)
+        })
     })
   },
 
-  // get user info
   getInfo({ commit, state }) {
-    if (MOCK_LOGIN) {
-      console.log('Mock getInfo, returning mock user data')
-      const mockData = {
-        user: {
-          userId: 1,
-          username: 'admin',
-          realName: 'Mock User',
-          avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif',
-          introduction: 'Mock user for development'
-        },
-        roles: ['admin'],
-        permissions: [
-          {
-            menuId: 1,
-            menuName: '投标数据',
-            menuURL: '#',
-            subMenuList: [
-              {
-                menuId: 2,
-                menuName: '招标信息',
-                menuURL: 'biddingInfo/list'
-              }
-            ]
-          },
-          {
-            menuId: 3,
-            menuName: '中标数据',
-            menuURL: '#',
-            subMenuList: [
-              {
-                menuId: 4,
-                menuName: '中标列表',
-                menuURL: 'zhongbiao/list'
-              }
-            ]
-          },
-          {
-            menuId: 5,
-            menuName: '操作员管理',
-            menuURL: '#',
-            subMenuList: [
-              {
-                menuId: 6,
-                menuName: '操作员列表',
-                menuURL: 'oper/list'
-              }
-            ]
-          }
-        ],
-        permissionList: ['oper/list', 'zhongbiao/list']
-      }
-      commit('SET_ROLES', mockData.roles)
-      commit('SET_NAME', mockData.user.realName)
-      commit('SET_AVATAR', mockData.user.avatar)
-      commit('SET_INTRODUCTION', mockData.user.introduction)
-      commit('SET_PERMISSIONS', mockData.permissionList)
-      return Promise.resolve({ ...mockData, menus: mockData.permissions })
-    }
     return new Promise((resolve, reject) => {
-      getUserInfo(state.login_name, state.roleinfoId).then(response => {
-        let { data } = response
+      getUserInfo().then(response => {
+        let data = response
 
         if (!data) {
           reject('Verification failed, please Login again.')
+          return
         }
 
-        // Backend returns nested structure: {user: {...}, roles: [...], permissions: [...]}
-        // Extract fields from the nested structure
         const user = data.user || data || {}
         let roles = data.roles || []
+        const permissions = data.permissions || []
 
-        // Handle different role data formats
-        // Format 1: Array of role objects [{roleInfoId: 1, roleName: "超级管理员"}, ...]
-        if (roles.length > 0 && typeof roles[0] === 'object' && roles[0].roleName) {
-          roles = roles.map(role => role.roleName)
+        if (user.roleName) {
+          roles = [user.roleName]
+        } else {
+          if (roles.length > 0 && typeof roles[0] === 'object' && roles[0].roleName) {
+            roles = roles.map(role => role.roleName)
+          } else if (roles.length > 0 && typeof roles[0] === 'string') {
+            roles = roles
+          } else if (typeof roles === 'object' && !Array.isArray(roles) && roles.roleName) {
+            roles = [roles.roleName]
+          } else if (roles.data && Array.isArray(roles.data)) {
+            roles = roles.data.map(role => role.roleName || role.name)
+          }
         }
-        // Format 2: Array of strings ["admin", "超级管理员"]
-        else if (roles.length > 0 && typeof roles[0] === 'string') {
-          roles = roles
-        }
-        // Format 3: Single role object
-        else if (typeof roles === 'object' && !Array.isArray(roles) && roles.roleName) {
-          roles = [roles.roleName]
-        }
-        // Format 4: Nested data structure {data: [...]} from some APIs
-        else if (roles.data && Array.isArray(roles.data)) {
-          roles = roles.data.map(role => role.roleName || role.name)
-        }
-
-        // 获取菜单数据（后端返回的 permissions 字段）
-        const menus = data.permissions || []
-        console.log('用户菜单数据:', menus)
 
         const name = user.realName || user.username || user.name || ''
         const avatar = user.avatar || ''
         const introduction = user.introduction || ''
 
-        // 获取用户的权限列表
-        // 支持两种格式：
-        // 1. permissions: [{menuId: 186, menuName: "投标数据", menuURL: "#", subMenuList: [...]}, ...]
-        // 2. permissionList: ["#", "biddingInfo/list"]
-        let permissions = []
-        
-        // 如果返回的是菜单对象数组，提取 menuURL
-        if (data.permissions && Array.isArray(data.permissions)) {
-          permissions = extractMenuUrls(data.permissions)
-        }
-        
-        // 合并 permissionList（URL列表）
-        if (data.permissionList && Array.isArray(data.permissionList)) {
-          permissions = [...new Set([...permissions, ...data.permissionList])]
-        }
-
-        // roles must be a non-empty array
         if (!roles || roles.length <= 0) {
           reject('getInfo: roles must be a non-null array!')
         }
@@ -231,14 +174,50 @@ const actions = {
         commit('SET_AVATAR', avatar)
         commit('SET_INTRODUCTION', introduction)
         commit('SET_PERMISSIONS', permissions)
-        resolve({ ...data, roles, menus, permissions })
+        
+        let dataPermissions = data.dataPermissions || 
+                              user.dataPermissions || 
+                              data.data_permissions || 
+                              user.data_permissions || 
+                              []
+        
+        if (!Array.isArray(dataPermissions)) {
+          dataPermissions = [dataPermissions]
+        }
+        
+        commit('SET_DATA_PERMISSIONS', dataPermissions)
+
+        const buildMenuTree = (menuData) => {
+          return menuData.map(menu => {
+            const menuItem = {
+              menuId: menu.menu_id || menu.menuId,
+              menuName: menu.menu_name || menu.menuName,
+              menuURL: menu.menu_url || menu.menuURL || menu.menuUrl || '#',
+              imageurl: menu.imageurl,
+              menu_auth: menu.menu_auth,
+              subMenuList: [],
+              btnList: menu.btnList || []
+            }
+            
+            const childMenus = menu.children || menu.subMenuList
+            if (childMenus && Array.isArray(childMenus) && childMenus.length > 0) {
+              menuItem.subMenuList = buildMenuTree(childMenus)
+            }
+            
+            return menuItem
+          })
+        }
+        
+        const treePermissions = convertPermissionsToTree(permissions)
+        const menus = Array.isArray(treePermissions) ? buildMenuTree(treePermissions) : []
+
+        resolve({ ...data, roles, permissions, menus })
       }).catch(error => {
         reject(error)
       })
     })
   },
 
-  // user logout
   logout({ commit, state, dispatch }) {
     return new Promise((resolve, reject) => {
       logout().then(() => {
@@ -247,8 +226,6 @@ const actions = {
         removeToken()
         resetRouter()
 
-        // reset visited views and cached views
-        // to fixed https://github.com/PanJiaChen/vue-element-admin/issues/2485
         dispatch('tagsView/delAllViews', null, { root: true })
 
         resolve()
@@ -258,17 +235,16 @@ const actions = {
     })
   },
 
-  // remove token
   resetToken({ commit }) {
     return new Promise(resolve => {
       commit('SET_TOKEN', '')
       commit('SET_ROLES', [])
+      commit('SET_PERMISSIONS', [])
       removeToken()
       resolve()
     })
   },
 
-  // dynamically modify permissions
   async changeRoles({ commit, dispatch }, role) {
     const token = role + '-token'
 
@@ -279,12 +255,9 @@ const actions = {
 
     resetRouter()
 
-    // generate accessible routes map based on roles and menus
     const accessRoutes = await dispatch('permission/generateRoutes', { roles, menus }, { root: true })
-    // dynamically add accessible routes (Vue Router 4)
     accessRoutes.forEach(route => router.addRoute(route))
 
-    // reset visited views and cached views
     dispatch('tagsView/delAllViews', null, { root: true })
   }
 }

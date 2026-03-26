@@ -34,7 +34,6 @@ export default {
     activeMenu() {
       const route = this.$route
       const { meta, path } = route
-      // if set path, the sidebar will highlight the path you set
       if (meta.activeMenu) {
         return meta.activeMenu
       }
@@ -44,7 +43,11 @@ export default {
       return this.$store.state.settings.sidebarLogo
     },
     variables() {
-      return variables
+      return variables || {
+        menuBg: '#ffffff',
+        menuText: '#333333',
+        menuActiveText: '#409EFF'
+      }
     },
     isCollapse() {
       return !this.sidebar.opened

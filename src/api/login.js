@@ -1,17 +1,15 @@
 import request from '@/utils/request'
 
-export function loginByUsername(userName, password, verifyCode, uucode, oldyzmuuid, yzm) {
+export function loginByUsername(username, password, code, captchaKey) {
   const data = {
-    userName,
+    username,
     password,
-    verifyCode,
-    uucode,
-    oldyzmuuid,
-    yzm
+    code,
+    captchaKey
   }
   console.log('loginByUsername data:', data)
   return request({
-    url: '/admin/login',
+    url: '/api/auth/login',
     method: 'post',
     data
   })
@@ -19,14 +17,14 @@ export function loginByUsername(userName, password, verifyCode, uucode, oldyzmuu
 
 export function logout() {
   return request({
-    url: '/admin/logout',
+    url: '/api/user/logout',
     method: 'post'
   })
 }
 
 export function getUserInfo(login_name, roleinfoId) {
   return request({
-    url: '/admin/getUserInfo',
+    url: '/api/user/info',
     method: 'get',
     params: {
       loginName: login_name || undefined,
@@ -51,14 +49,7 @@ export function checkPwd() {
 
 export function getCaptcha() {
   return request({
-    url: '/admin/captcha',
-    method: 'post'
-  })
-}
-export function sendmms(params) {
-  return request({
-    url: '/admin/sendmms',
-    method: 'post',
-    params
+    url: '/api/auth/captcha',
+    method: 'get'
   })
 }

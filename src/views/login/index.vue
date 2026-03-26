@@ -41,23 +41,23 @@
             </div>
           </el-form-item>
           <el-form-item prop="verifyCode">
-            <div class="input-wrapper">
-              <el-icon class="input-icon"><Grid /></el-icon>
-              <el-input
-                v-model="loginForm.verifyCode"
-                placeholder="请输入验证码"
-                class="input-field verify-field"
-                @keyup.enter.native="handleLogin"
-              />
-              <img 
-                v-if="captchaSrc" 
-                class="captcha-img" 
-                :src="captchaSrc" 
-                alt="验证码" 
-                @click="refreshCode"
-                title="点击刷新验证码"
-              >
-              <span v-else class="captcha-placeholder" @click="refreshCode">加载中...</span>
+            <div class="verify-wrapper">
+              <div class="verify-input">
+                <el-icon class="input-icon"><Grid /></el-icon>
+                <el-input
+                  v-model="loginForm.verifyCode"
+                  placeholder="请输入验证码"
+                  class="input-field"
+                  @keyup.enter.native="handleLogin"
+                />
+              </div>
+              <div class="captcha-box" @click="refreshCode">
+                <span v-if="captchaText" class="captcha-text">{{ captchaText }}</span>
+                <span v-else class="captcha-loading">
+                  <el-icon class="loading-icon"><Loading /></el-icon>
+                </span>
+                <el-icon class="refresh-icon"><Refresh /></el-icon>
+              </div>
             </div>
           </el-form-item>
           <el-button :loading="loading" type="primary" class="login-btn" @click="handleLogin">登 录</el-button>
@@ -69,7 +69,7 @@
 
 <script>
 import * as api from '@/api/login'
-import { User, Lock, View, Hide, Grid } from '@element-plus/icons-vue'
+import { User, Lock, View, Hide, Grid, Loading, Refresh } from '@element-plus/icons-vue'
 
 export default {
   name: 'Login',
@@ -78,15 +78,16 @@ export default {
     Lock,
     View,
     Hide,
-    Grid
+    Grid,
+    Loading,
+    Refresh
   },
   data() {
     return {
       loginForm: {
         username: '',
         password: '',
-        verifyCode: '',
-        uucode: ''
+        verifyCode: ''
       },
       loginRules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -95,7 +96,8 @@ export default {
       },
       passwordType: 'password',
       loading: false,
-      captchaSrc: ''
+      captchaText: '',
+      captchaKey: ''
     }
   },
   created() {
@@ -108,20 +110,17 @@ export default {
     refreshCode() {
       api.getCaptcha().then(response => {
         console.log('Captcha response:', response)
-        this.loginForm.uucode = response.data.uucode
-        const imgData = response.data.img
-        if (imgData) {
-          if (imgData.startsWith('data:image')) {
-            this.captchaSrc = imgData
-          } else if (imgData.startsWith('/9j') || imgData.length > 100) {
-            this.captchaSrc = 'data:image/jpeg;base64,' + imgData
-          } else {
-            this.captchaSrc = imgData
-          }
+        if (response) {
+          this.captchaKey = response.captchaKey || ''
+          this.captchaText = response.captcha || ''
+        } else {
+          this.captchaKey = ''
+          this.captchaText = ''
         }
       }).catch((err) => {
         console.error('Captcha error:', err)
-        this.captchaSrc = ''
+        this.captchaKey = ''
+        this.captchaText = ''
       })
     },
     handleLogin() {
@@ -129,11 +128,12 @@ export default {
         if (valid) {
           this.loading = true
           const data = {
-            userName: btoa(this.loginForm.username),
-            password: btoa(this.loginForm.password),
-            verifyCode: this.loginForm.verifyCode,
-            uucode: this.loginForm.uucode
+            username: this.loginForm.username,
+            password: this.loginForm.password,
+            code: this.loginForm.verifyCode,
+            captchaKey: this.captchaKey
           }
+          console.log('Login data:', data)
           this.$store.dispatch('user/LoginByUsername', data).then(() => {
             this.loading = false
             this.$router.push('/')
@@ -284,36 +284,98 @@ export default {
   color: #667eea;
 }
 
-.verify-field {
+.verify-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.verify-input {
   flex: 1;
-  min-width: 0;
-}
-
-.captcha-img {
-  width: 100px;
-  height: 36px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin: 5px 10px 5px 0;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  transition: border-color 0.3s;
 }
 
-.captcha-img:hover {
-  opacity: 0.8;
+.verify-input:focus-within {
+  border-color: #667eea;
 }
 
-.captcha-placeholder {
+.verify-input .input-icon {
+  padding: 0 12px;
+  color: #667eea;
+  font-size: 18px;
+}
+
+.verify-input .input-field {
+  flex: 1;
+}
+
+.verify-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  border: none;
+  background: transparent;
+}
+
+.captcha-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 36px;
-  margin: 5px 10px 5px 0;
-  background: #f5f7fa;
-  border-radius: 4px;
-  color: #909399;
+  gap: 6px;
+  min-width: 110px;
+  height: 40px;
+  padding: 0 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.captcha-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.captcha-text {
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 5px;
+  user-select: none;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.captcha-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-icon {
+  color: white;
+  font-size: 18px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.refresh-icon {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.captcha-box:hover .refresh-icon {
+  color: white;
+  transform: rotate(180deg);
 }
 
 .login-btn {

@@ -1,14 +1,14 @@
 <template>
   <div v-if="!item.hidden">
-    <template v-if="hasOneShowingChild(item.children,item) && (!onlyOneChild.children||onlyOneChild.noShowingChildren)&&!item.alwaysShow">
-      <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path)">
-        <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{'submenu-title-noDropdown':!isNest}">
-          <item :icon="onlyOneChild.meta.icon||(item.meta&&item.meta.icon)" :title="onlyOneChild.meta.title" />
+    <template v-if="!hasChildren(item)">
+      <app-link v-if="item.meta" :to="resolvePath()">
+        <el-menu-item :index="resolvePath()" :class="{'submenu-title-noDropdown': !isNest}">
+          <item :icon="item.meta && item.meta.icon" :title="item.meta.title" />
         </el-menu-item>
       </app-link>
     </template>
 
-    <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
+    <el-submenu v-else :index="resolvePath()" popper-append-to-body>
       <template #title>
         <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
@@ -17,7 +17,7 @@
         :key="child.path"
         :is-nest="true"
         :item="child"
-        :base-path="resolvePath(child.path)"
+        :base-path="resolvePath()"
         class="nest-menu"
       />
     </el-submenu>
@@ -26,39 +26,16 @@
 
 <script>
 import { isExternal } from '@/utils/validate'
+import { resolvePath as resolvePathUtil } from '@/utils/path-browser'
 import Item from './Item'
 import AppLink from './Link'
 import FixiOSBug from './FixiOSBug'
-
-// Simple path resolve function to replace Node.js path module
-function resolvePath(basePath, routePath) {
-  // 如果 routePath 是空或只有一个 '/'，直接返回 basePath
-  if (!routePath || routePath === '/' || routePath === '') {
-    return basePath || '/'
-  }
-  
-  // 如果 basePath 是空或 '/', 直接返回 routePath
-  if (!basePath || basePath === '/') {
-    return routePath.startsWith('/') ? routePath : '/' + routePath
-  }
-  
-  // 移除 basePath 末尾的 '/'
-  const base = basePath.replace(/\/$/, '')
-  // 确保 routePath 没有前导 '/'
-  const route = routePath.replace(/^\//, '')
-  
-  // 返回完整的绝对路径
-  const result = base + '/' + route
-  console.log('resolvePath:', { basePath, routePath, result })
-  return result.startsWith('/') ? result : '/' + result
-}
 
 export default {
   name: 'SidebarItem',
   components: { Item, AppLink },
   mixins: [FixiOSBug],
   props: {
-    // route object
     item: {
       type: Object,
       required: true
@@ -72,49 +49,22 @@ export default {
       default: ''
     }
   },
-  data() {
-    // To fix https://github.com/PanJiaChen/vue-admin-template/issues/237
-    // TODO: refactor with render function
-    this.onlyOneChild = null
-    return {}
-  },
   methods: {
-    hasOneShowingChild(children = [], parent) {
-      const showingChildren = children.filter(item => {
-        if (item.hidden) {
-          return false
-        } else {
-          // Temp set(will be used if only has one showing child)
-          this.onlyOneChild = item
-          return true
-        }
-      })
-      console.log('hasOneShowingChild:', parent.path, 'showingChildren:', showingChildren.map(c => c.path))
-
-      // When there is only one child router, the child router is displayed by default
-      if (showingChildren.length === 1) {
-        console.log('Only one child, path:', this.onlyOneChild.path, 'fullPath:', this.resolvePath(this.onlyOneChild.path))
-        return true
+    resolvePath() {
+      if (this.item.path && this.item.path.startsWith('/')) {
+        return this.item.path
       }
-
-      // Show parent if there are no child router to display
-      if (showingChildren.length === 0) {
-        this.onlyOneChild = { ... parent, path: '', noShowingChildren: true }
-        return true
+      if (this.basePath && this.basePath.startsWith('/')) {
+        return resolvePathUtil(this.basePath, this.item.path)
       }
-
-      return false
+      return this.item.path
     },
-    resolvePath(routePath) {
-      if (isExternal(routePath)) {
-        return routePath
+    hasChildren(item) {
+      if (!item.children || item.children.length === 0) {
+        return false
       }
-      if (isExternal(this.basePath)) {
-        return this.basePath
-      }
-      const resolved = resolvePath(this.basePath, routePath)
-      console.log('resolvePath basePath:', this.basePath, 'routePath:', routePath, 'resolved:', resolved)
-      return resolved
+      const visibleChildren = item.children.filter(child => !child.hidden)
+      return visibleChildren.length > 0
     }
   }
 }
