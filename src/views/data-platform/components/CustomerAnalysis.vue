@@ -107,13 +107,13 @@
         <template #header>
           <div class="card-title">行业销售分布</div>
         </template>
-        <div ref="industryChartRef" class="chart-container"></div>
+        <div ref="industryChartRef" class="chart-container" />
       </el-card>
       <el-card class="chart-card chart-2">
         <template #header>
           <div class="card-title">销售额区间分布</div>
         </template>
-        <div ref="rangeDistChartRef" class="chart-container"></div>
+        <div ref="rangeDistChartRef" class="chart-container" />
       </el-card>
     </div>
 
@@ -122,13 +122,13 @@
         <template #header>
           <div class="card-title">行业 x 区间 热力图</div>
         </template>
-        <div ref="heatmapChartRef" class="chart-container"></div>
+        <div ref="heatmapChartRef" class="chart-container" />
       </el-card>
       <el-card class="chart-card">
         <template #header>
           <div class="card-title">销售额排名 Top10</div>
         </template>
-        <div ref="rankChartRef" class="chart-container"></div>
+        <div ref="rankChartRef" class="chart-container" />
       </el-card>
     </div>
 
@@ -142,16 +142,16 @@
         </div>
       </template>
       <el-table
+        v-loading="listLoading"
         :data="paginatedData"
         border
         stripe
         style="width: 100%;"
-        v-loading="listLoading"
-        :default-sort="{ prop: 'currentSales', order: 'descending' }" 
+        :default-sort="{ prop: 'currentSales', order: 'descending' }"
       >
-        <el-table-column prop="orgName" :label="customerType === 'ORG' ? '客户组织' : '客户名称'" width="220"></el-table-column>
-        <el-table-column prop="industry" label="行业" width="80"></el-table-column>
-        <el-table-column prop="customerCount" label="客户数量" width="90" align="center"></el-table-column>
+        <el-table-column prop="orgName" :label="customerType === 'ORG' ? '客户组织' : '客户名称'" width="220" />
+        <el-table-column prop="industry" label="行业" width="80" />
+        <el-table-column prop="customerCount" label="客户数量" width="90" align="center" />
         <el-table-column prop="salesRange" label="销售额区间" width="120" align="center">
           <template #default="scope">
             <el-tag :type="getSalesRangeTagType(scope.row.salesRange)" size="small">
@@ -266,7 +266,7 @@ export default {
         const lastYearSales = this.getFieldValue(item, '销售额', 'last')
         const currentProfit = this.getFieldValue(item, '差价', 'current')
         const lastYearProfit = this.getFieldValue(item, '差价', 'last')
-        const salesYoYRate = lastYearSales > 0 ? currentSales - lastYearSales  : 0
+        const salesYoYRate = lastYearSales > 0 ? currentSales - lastYearSales : 0
         const profitYoYRate = lastYearProfit > 0 ? currentProfit - lastYearProfit : 0
 
         return {
@@ -385,12 +385,12 @@ export default {
     applyFilters() {
       let filtered = [...this.rawData]
       this.currentPage = 1
-      
+
       filtered = filtered.filter(item => {
         const industry = item['行业'] || ''
         return industry !== '个人'
       })
-      
+
       if (this.selectedIndustries.length > 0) {
         filtered = filtered.filter(item => {
           const industry = item['行业'] || ''
@@ -433,7 +433,7 @@ export default {
       const totalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'current'), 0)
       const lastYearTotalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'last'), 0)
       const totalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'current'), 0)
-      const lastYearTotalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'last'), 0)    
+      const lastYearTotalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'last'), 0)
       const totalCustomers = this.filteredData.reduce((sum, item) => sum + (item['客户数量'] || 0), 0)
       const avgDealSize = totalCustomers > 0 ? totalSales / totalCustomers : 0
 
@@ -562,12 +562,12 @@ export default {
 
     updateRangeDistChart() {
       if (!this.rangeDistChart) return
-      
+
       if (!this.filteredData || this.filteredData.length === 0) {
         this.rangeDistChart.clear()
         return
       }
-      
+
       const rangeOrder = ['300万以上', '100-300万', '50-100万', '20-50万', '10-20万', '10万以下']
       const salesMap = new Map()
       const profitMap = new Map()
@@ -589,7 +589,6 @@ export default {
           countMap.set(range, countMap.get(range) + count)
         }
       })
-
 
       const option = {
         tooltip: {
@@ -728,7 +727,7 @@ export default {
           name: '销售额',
           type: 'heatmap',
           data: heatmapData,
-          label: { 
+          label: {
             show: true,
             formatter: (params) => this.formatWan(params.value[2])
           },
@@ -815,10 +814,10 @@ export default {
         item.salesRange,
         (item.currentSales / 10000).toFixed(1),
         (item.lastYearSales / 10000).toFixed(1),
-        (item.salesYoYRate/10000).toFixed(1) ,
+        (item.salesYoYRate / 10000).toFixed(1),
         (item.currentProfit / 10000).toFixed(1),
         (item.lastYearProfit / 10000).toFixed(1),
-        (item.profitYoYRate/10000).toFixed(1) 
+        (item.profitYoYRate / 10000).toFixed(1)
       ])
 
       const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')

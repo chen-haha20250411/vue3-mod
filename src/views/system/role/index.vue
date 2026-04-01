@@ -12,27 +12,27 @@
 
     <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;margin-top: 20px;">
       <el-table-column label="ID" prop="roleInfoId" align="center" width="80">
-        <template v-slot="scope">
+        <template #default="scope">
           <span>{{ scope.row.roleInfoId }}</span>
         </template>
       </el-table-column>
       <el-table-column label="角色名称" min-width="150px" align="center">
-        <template v-slot="scope">
+        <template #default="scope">
           <span class="link-type" @click="handleUpdate(scope.row)">{{ scope.row.roleName }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" min-width="200px" align="center">
-        <template v-slot="scope">
+        <template #default="scope">
           <span>{{ scope.row.remark }}</span>
         </template>
       </el-table-column>
       <el-table-column label="创建人" width="150px" align="center">
-        <template v-slot="scope">
+        <template #default="scope">
           <span>{{ scope.row.loginName || '-' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="250px" align="center" fixed="right">
-        <template v-slot="scope">
+        <template #default="scope">
           <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">
             编辑
           </el-button>
@@ -47,7 +47,6 @@
     </el-table>
 
     <pagination v-show="total>0" :total="total" :page="listQuery.currPageNo" :limit="listQuery.limit" @pagination="handlePagination" />
-
 
   </div>
 </template>

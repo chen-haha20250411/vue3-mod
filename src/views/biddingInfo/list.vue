@@ -2,43 +2,38 @@
   <div class="app-container">
     <div v-show="showList">
       <div class="filter-container">
-        <!-- <el-input v-model="q.roleName" style="width:200px" placeholder="角色名称" class="filter-item"/>-->
-        <el-input v-model="q.projectNo" style="width:200px" placeholder="项目编号" class="filter-item" />
-        <el-input v-model="q.title" style="width:300px" placeholder="项目名称" class="filter-item" />
+        <el-input v-model="q.projectNumber" style="width:200px" placeholder="项目编号" class="filter-item" />
+        <el-input v-model="q.projectName" style="width:200px" placeholder="项目名称" class="filter-item" />
+        <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:220px" class="filter-item" />
         <el-button class="filter-item" type="primary" icon="el-icon-search" @click="query">{{ $t('table.search') }}</el-button>
         <el-button v-has="'add'" class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="add">{{ $t('table.add') }}</el-button>
         <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-refresh" @click="handleResetQuery()">重置</el-button>
-
       </div>
       <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;height:auto;">
         <el-table-column label="发布日期" width="120" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.publishDate }}</span>
           </template>
         </el-table-column>
         <el-table-column label="项目编号" width="200" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.projectNumber }}</span>
           </template>
         </el-table-column>
         <el-table-column label="标题" min-width="300" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.projectName }}</span>
           </template>
         </el-table-column>
         <el-table-column label="详细内容" width="100" align="center">
-          <template v-slot="scope">
-            <el-button v-if="scope.row.totalContent" type="text" size="mini" @click="viewDetail(scope.row)">查看详情</el-button>
+          <template #default="scope">
+            <el-button v-if="scope.row.htmlUrl" type="text" size="mini" @click="viewDetail(scope.row)">查看详情</el-button>
             <span v-else>-</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-dialog :visible.sync="dialogVisible" title="详细内容" width="800px">
-        <div class="detail-content" v-html="currentDetail.totalContent || '<p>暂无内容</p>'"></div>
-      </el-dialog>
-
-      <pagination v-show=" total>0" style="float:right" :total="total" v-model:page="q.currPageNo" v-model:limit="q.limit" @size-change="handleSizeChange" @current-change="handleCurrentChange" @pagination="getList" />
+      <pagination v-show=" total>0" v-model:page="q.currPageNo" v-model:limit="q.limit" style="float:right" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" @pagination="getList" />
     </div>
     <el-card v-show="!showList">
       <span>{{ title }}</span>
@@ -93,18 +88,6 @@
                 placeholder="请输入项目名称"
               />
             </el-form-item>
-            <!-- <el-form-item label="内容" prop="content">
-                <el-input v-model="showdata.content" placeholder="请输入内�?/>
-            </el-form-item> -->
-            <!-- <el-form-item label="项目Id" prop="projectId">
-                <el-input v-model="showdata.projectId" placeholder="请输入项目Id"/>
-            </el-form-item>
-            <el-form-item label="总内�? prop="totalContent">
-              <el-input v-model="showdata.totalContent" placeholder="请输入总内�?/>
-            </el-form-item> -->
-            <!-- <el-form-item label="数据来源" prop="dataSource">
-              <el-input v-model="showdata.dataSource" placeholder="请输入数据来�?/>
-            </el-form-item> -->
             <el-form-item label="网页链接" prop="html_url">
               <el-input
                 v-model="showdata.html_url"
@@ -155,9 +138,13 @@ export default {
       q: {
         currPageNo: 1,
         limit: 25,
-        projectNo: '',
-        title: ''
+        projectNumber: '',
+        projectName: '',
+        startDate: '',
+        endDate: ''
       },
+      dateRange: [],
+
       showList: true,
       title: null,
       showdata: {},
@@ -169,9 +156,7 @@ export default {
           { required: true, message: '项目名称不能为空', trigger: 'blur' }
         ]
       },
-      isView: false,
-      dialogVisible: false,
-      currentDetail: {}
+      isView: false
     }
   },
   created() {
@@ -181,8 +166,28 @@ export default {
     getList() {
       this.listLoading = true
       api.fetchList(this.q).then(response => {
-        this.list = response.data.items
-        this.total = response.data.total
+        let listData = []
+        let totalData = 0
+
+        if (response && response.items) {
+          listData = response.items
+          totalData = response.total || 0
+        } else if (Array.isArray(response)) {
+          // 直接返回数组的情况
+          listData = response
+          totalData = response.length || 0
+        } else {
+          listData = []
+        }
+
+        if (!Array.isArray(listData)) {
+          listData = []
+        }
+
+        this.list = listData
+        this.total = totalData
+        this.listLoading = false
+      }).catch(() => {
         this.listLoading = false
       })
     },
@@ -195,6 +200,14 @@ export default {
       this.getList()
     },
     query() {
+      // 处理日期范围
+      if (this.dateRange && this.dateRange.length === 2) {
+        this.q.startDate = this.dateRange[0] ? this.dateRange[0].toISOString().split('T')[0] : ''
+        this.q.endDate = this.dateRange[1] ? this.dateRange[1].toISOString().split('T')[0] : ''
+      } else {
+        this.q.startDate = ''
+        this.q.endDate = ''
+      }
       this.reload()
     },
     add() {
@@ -265,15 +278,42 @@ export default {
     },
     handleResetQuery() {
       this.q = {
-        projectNo: '',
-        title: ''
+        currPageNo: 1,
+        limit: 25,
+        projectNumber: '',
+        projectName: '',
+        startDate: '',
+        endDate: ''
       }
+      this.dateRange = []
       this.reload()
     },
     viewDetail(row) {
-      this.currentDetail = row
-      this.dialogVisible = true
+      if (row.htmlUrl) {
+        window.open(row.htmlUrl, '_blank')
+      }
     }
   }
 }
 </script>
+
+<style scoped>
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 20px;
+  padding: 5px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+}
+
+.filter-item {
+  flex-shrink: 0;
+}
+
+.el-button {
+  flex-shrink: 0;
+}
+</style>

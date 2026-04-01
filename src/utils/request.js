@@ -9,30 +9,15 @@ const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API,
   timeout: 10000,
   withCredentials: true,
-  crossDomain: true,
-  responseType: 'arraybuffer'
+  crossDomain: true
 })
 // 默认使用json格式
 service.defaults.headers.post['Content-Type'] = 'application/json'
+service.defaults.headers.put['Content-Type'] = 'application/json'
 service.defaults.withCredentials = true
 service.defaults.transformRequest = [function(data, headers) {
-  // console.log('transformRequest called, data type:', typeof data, 'headers:', headers)
-  if (!data || typeof data !== 'object') {
-    // console.log('transformRequest: returning data as-is')
-    return data
-  }
-  if (headers && headers['Content-Type'] === 'application/json') {
-    // console.log('transformRequest: converting to JSON string')
-    return JSON.stringify(data)
-  }
-  // console.log('transformRequest: converting to form-urlencoded')
-  let ret = ''
-  for (const it in data) {
-    ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
-  }
-  const result = ret.slice(0, -1)
-  // console.log('transformRequest result:', result)
-  return result
+  // 确保使用JSON格式
+  return JSON.stringify(data)
 }]
 // request interceptor
 service.interceptors.request.use(
@@ -44,6 +29,8 @@ service.interceptors.request.use(
       config.headers['token'] = token
       // 同时设置Authorization头，兼容不同的后端实现
       config.headers['Authorization'] = `Bearer ${token}`
+      // 同时设置accessToken头，兼容后端使用accessToken的情况
+      config.headers['accessToken'] = token
     }
     // 保留baseURL，确保生产环境中正确使用VUE_APP_BASE_API
     // console.log('Request config:', config.method, config.url, config.data)
@@ -67,7 +54,7 @@ service.interceptors.response.use(
     // console.log('Response headers:', response.headers)
     // console.log('Response data type:', typeof res)
     // console.log('Response data:', res)
-    
+
     // arraybuffer 转 string
     if (res instanceof ArrayBuffer) {
       res = new TextDecoder().decode(res)
@@ -156,14 +143,14 @@ service.interceptors.response.use(
     // 如果没有success或code字段，直接返回数据
     return res
   },
-  
+
   error => {
     // console.log('=== Error interceptor called ===')
     // console.log('err', error)
     // console.log('err.response', error.response)
     // console.log('err.config', error.config)
     // console.log('err.message', error.message)
-    
+
     // 处理 form-urlencoded 格式的错误响应
     if (error.response && error.response.data && error.response.data instanceof ArrayBuffer) {
       const data = new TextDecoder().decode(error.response.data)
@@ -195,7 +182,7 @@ service.interceptors.response.use(
         error.response.data = obj
       }
     }
-    
+
     // 构造更友好的错误信息
     let message = error.message
     if (error.response) {
@@ -219,7 +206,7 @@ service.interceptors.response.use(
     } else if (error.message && error.message.includes('timeout')) {
       message = '请求超时，请稍后重试'
     }
-    
+
     ElMessage({
       message: message,
       type: 'error',

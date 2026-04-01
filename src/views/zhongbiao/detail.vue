@@ -28,8 +28,7 @@
             <template #header>
               <span>详细内容</span>
             </template>
-            <div class="content-html" v-html="detailData.html_content || '<p>暂无内容</p>'">
-            </div>
+            <div class="content-html" v-html="detailData.html_content || '<p>暂无内容</p>'" />
           </el-card>
         </div>
         <div v-else class="no-data">

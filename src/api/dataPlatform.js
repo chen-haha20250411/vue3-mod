@@ -8,8 +8,6 @@ export function getSalesTarget(params) {
   })
 }
 
-
-
 export function getValueAddedBusinessNew(params) {
   return request({
     url: '/api/sales/report/getValueAddedBusiness',

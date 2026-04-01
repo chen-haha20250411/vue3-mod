@@ -23,8 +23,8 @@
       </div>
     </div>
 
-    <el-table :data="tableData" border stripe style="width: 100%; margin-top: 15px;" v-loading="listLoading">
-      <el-table-column prop="category" :label="getDimensionLabel" width="120"></el-table-column>
+    <el-table v-loading="listLoading" :data="tableData" border stripe style="width: 100%; margin-top: 15px;">
+      <el-table-column prop="category" :label="getDimensionLabel" width="140" />
       <el-table-column prop="salesAmount" label="含税销售额" width="130" align="right">
         <template #default="scope">
           <span style="color: #f56c6c; font-weight: bold;">{{ formatCurrency(scope.row.salesAmount) }}</span>
@@ -61,6 +61,32 @@
       </el-table-column>
     </el-table>
 
+    <div v-if="tableData.length > 0" class="summary-section">
+      <div class="summary-title">汇总统计</div>
+      <div class="summary-content">
+        <div class="summary-item">
+          <span class="summary-label">含税销售额:</span>
+          <span class="summary-value sales">{{ formatCurrency(summaryData.totalSalesAmount) }}万</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">增值业务目标:</span>
+          <span class="summary-value target">{{ formatCurrency(summaryData.totalTargetValueAddedAmount) }}万</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">增值业务金额:</span>
+          <span class="summary-value actual">{{ formatCurrency(summaryData.totalValueAddedAmount) }}万</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">整体完成率:</span>
+          <span class="summary-value" :style="{ color: summaryData.overallCompletionRate >= 100 ? '#67c23a' : '#e6a23c' }">{{ summaryData.overallCompletionRate.toFixed(2) }}%</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">整体占比:</span>
+          <span class="summary-value rate">{{ summaryData.overallValueAddedRate.toFixed(2) }}%</span>
+        </div>
+      </div>
+    </div>
+
     <div v-if="!hasData && !listLoading" class="no-data-tip">
       <el-empty description="暂无数据" />
     </div>
@@ -85,9 +111,6 @@ export default {
       valueAddedData: []
     }
   },
-  mounted() {
-    this.fetchData()
-  },
   computed: {
     getDimensionLabel() {
       const labels = {
@@ -98,38 +121,51 @@ export default {
         branch: '分支机构'
       }
       return labels[this.summaryDimension] || '人员名称'
+    },
+    summaryData() {
+      const totalSalesAmount = this.tableData.reduce((sum, item) => sum + (item.salesAmount || 0), 0)
+      const totalTargetValueAddedAmount = this.tableData.reduce((sum, item) => sum + (item.targetValueAddedAmount || 0), 0)
+      const totalValueAddedAmount = this.tableData.reduce((sum, item) => sum + (item.valueAddedAmount || 0), 0)
+      const overallCompletionRate = totalTargetValueAddedAmount > 0 ? (totalValueAddedAmount / totalTargetValueAddedAmount) * 100 : 0
+      const overallValueAddedRate = totalSalesAmount > 0 ? (totalValueAddedAmount / totalSalesAmount) * 100 : 0
+      return {
+        totalSalesAmount,
+        totalTargetValueAddedAmount,
+        totalValueAddedAmount,
+        overallCompletionRate,
+        overallValueAddedRate
+      }
     }
+  },
+  mounted() {
+    this.fetchData()
   },
   methods: {
     async fetchData() {
       this.listLoading = true
-      
+
       const currentYear = new Date().getFullYear()
       const currentMonth = new Date().getMonth() + 1
-      const currentDay = new Date().getDate()+1
-      
+      const currentDay = new Date().getDate() + 1
+
       const startDate = `${currentYear}-01-01`
       const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
 
       const dataPermissions = getDataPermissions()
-      let employeeName = ''
-      let permissionValue = ''
+      let permissionName = ''
       for (let i = 0; i < dataPermissions.length; i++) {
         const dataPerm = dataPermissions[i]
         if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
           for (let j = 0; j < dataPerm.permissions.length; j++) {
             const perm = dataPerm.permissions[j]
             if (perm.permissionType && perm.permissionType.toLowerCase() === 'employee') {
-              employeeName = perm.permissionName || ''
-              permissionValue = perm.permissionValue || ''
+              permissionName = perm.permissionName || ''
               break
             }
           }
-          if (employeeName) break
         }
         if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
-          employeeName = dataPerm.permissionName || ''
-          permissionValue = dataPerm.permissionValue || ''
+          permissionName = dataPerm.permissionName || ''
           break
         }
       }
@@ -138,28 +174,21 @@ export default {
         startDate,
         endDate
       }
-      if (permissionValue !== 'ALL') {
-        salesParams.staffName = employeeName
+      if (permissionName !== 'ALL') {
+        salesParams.staffName = permissionName
       }
 
       const valueAddedParams = {
         startDate,
         endDate,
-        personNameList: permissionValue !== 'ALL' ? permissionValue : undefined
+        personNameList: permissionName !== 'ALL' ? permissionName : undefined
       }
-
-      console.log('ValueAdded salesParams:', salesParams)
-      console.log('ValueAdded valueAddedParams:', valueAddedParams)
 
       try {
         const [salesResponse, valueAddedResponse] = await Promise.all([
           getSalesProfitReport(salesParams),
           getValueAddedBusinessNew(valueAddedParams)
         ])
-
-        console.log('Sales response:', salesResponse)
-        console.log('ValueAdded response:', valueAddedResponse)
-
         this.processSalesData(salesResponse)
         this.processValueAddedData(valueAddedResponse)
         this.mergeData()
@@ -175,43 +204,84 @@ export default {
         this.salesData = []
         return
       }
-      
+
       const dataArray = Array.isArray(response) ? response : (Array.isArray(response.data) ? response.data : (response.data?.data || []))
-      
-      this.salesData = dataArray.map(item => {
+
+      const isGroupDimension = ['business', 'branch'].includes(this.summaryDimension)
+
+      if (isGroupDimension) {
+        const groupedMap = new Map()
+        dataArray.forEach(item => {
+          const category = this.summaryDimension === 'business'
+            ? (item['业务线'] || '')
+            : (item['分支机构'] || '')
+          if (!category) return
+
+          if (!groupedMap.has(category)) {
+            groupedMap.set(category, {
+              category,
+              salesAmount: 0,
+              targetValueAddedAmount: 0
+            })
+          }
+          const grouped = groupedMap.get(category)
+          grouped.salesAmount += parseFloat(item['含税销售额']) || 0
+          grouped.targetValueAddedAmount += parseFloat(item['MB_sales_zz']) || parseFloat(item['MB_sales_zz业务目标']) || 0
+        })
+        this.salesData = Array.from(groupedMap.values())
+      } else {
         const dimensionKey = this.getDimensionKey()
-        return {
+        this.salesData = dataArray.map(item => ({
           category: item[dimensionKey] || item['人员名称'] || item['业务员'] || '',
           salesAmount: parseFloat(item['含税销售额']) || 0,
           targetValueAddedAmount: parseFloat(item['MB_sales_zz']) || parseFloat(item['MB_sales_zz业务目标']) || 0
-        }
-      })
+        }))
+      }
     },
 
     processValueAddedData(response) {
-      console.log('processValueAddedData - response:', response)
       if (!response) {
         this.valueAddedData = []
         return
       }
-      
       const dataArray = Array.isArray(response) ? response : (Array.isArray(response.data) ? response.data : (response.data?.data || []))
-      const dimensionKey = this.getDimensionKey()
-      const groupedData = new Map()
-      
-      dataArray.forEach(item => {
-        let category = item[dimensionKey] || item['人员名称'] || item['业务员'] || ''
-        if (!groupedData.has(category)) {
-          groupedData.set(category, {
-            category,
-            valueAddedAmount: 0
-          })
-        }
-        const grouped = groupedData.get(category)
-        grouped.valueAddedAmount += parseFloat(item['总换算合计金额']) || parseFloat(item['总换算合计']) || 0
-      })
-      
-      this.valueAddedData = Array.from(groupedData.values())
+
+      const isGroupDimension = ['business', 'branch'].includes(this.summaryDimension)
+
+      if (isGroupDimension) {
+        const groupedMap = new Map()
+        dataArray.forEach(item => {
+          const category = this.summaryDimension === 'business'
+            ? (item['业务线'] || '')
+            : (item['分支机构'] || '')
+          if (!category) return
+
+          if (!groupedMap.has(category)) {
+            groupedMap.set(category, {
+              category,
+              valueAddedAmount: 0
+            })
+          }
+          const grouped = groupedMap.get(category)
+          grouped.valueAddedAmount += parseFloat(item['总换算合计金额']) || parseFloat(item['总换算合计']) || 0
+        })
+        this.valueAddedData = Array.from(groupedMap.values())
+      } else {
+        const dimensionKey = this.getDimensionKey()
+        const groupedData = new Map()
+        dataArray.forEach(item => {
+          const category = item[dimensionKey] || item['人员名称'] || item['业务员'] || ''
+          if (!groupedData.has(category)) {
+            groupedData.set(category, {
+              category,
+              valueAddedAmount: 0
+            })
+          }
+          const grouped = groupedData.get(category)
+          grouped.valueAddedAmount += parseFloat(item['总换算合计金额']) || parseFloat(item['总换算合计']) || 0
+        })
+        this.valueAddedData = Array.from(groupedData.values())
+      }
     },
 
     mergeData() {
@@ -224,9 +294,7 @@ export default {
       this.valueAddedData.forEach(item => {
         vaMap.set(item.category, item)
       })
-
       const allCategories = new Set([...salesMap.keys(), ...vaMap.keys()])
-      
       this.tableData = Array.from(allCategories).map(category => {
         const salesItem = salesMap.get(category) || {}
         const vaItem = vaMap.get(category) || {}
@@ -312,6 +380,63 @@ export default {
   .no-data-tip {
     padding: 40px 0;
     text-align: center;
+  }
+
+  .summary-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    border: 1px solid #ebeef5;
+  }
+
+  .summary-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e4e7ed;
+  }
+
+  .summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .summary-label {
+    font-size: 14px;
+    color: #606266;
+    font-weight: 500;
+  }
+
+  .summary-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+
+    &.sales {
+      color: #f56c6c;
+    }
+
+    &.target {
+      color: #1c9099;
+    }
+
+    &.actual {
+      color: #e6a23c;
+    }
+
+    &.rate {
+      color: #409eff;
+    }
   }
 }
 </style>

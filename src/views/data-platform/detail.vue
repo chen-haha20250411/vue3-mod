@@ -7,7 +7,7 @@
           <el-button type="primary" plain @click="goBack">返回</el-button>
         </div>
       </template>
-      
+
       <div class="detail-content">
         <div class="section">
           <h3 class="section-title">{{ selectedYear }} 年度目标</h3>
@@ -39,7 +39,7 @@
                 </div>
               </div>
             </el-card>
-            
+
             <el-card class="target-card profit-card">
               <template #header>
                 <div class="card-title profit-title">年差价目标</div>
@@ -67,7 +67,7 @@
                 </div>
               </div>
             </el-card>
-            
+
             <el-card class="target-card value-added-card">
               <template #header>
                 <div class="card-title value-added-title">增值业绩目标</div>
@@ -97,26 +97,26 @@
             </el-card>
           </div>
         </div>
-        
+
         <div class="section">
           <h3 class="section-title">同期对比</h3>
           <div class="comparison-charts">
             <div class="chart-container">
               <h4>销售额同比</h4>
-              <div ref="salesComparisonChartRef" class="chart" style="height: 300px; width: 100%"></div>
+              <div ref="salesComparisonChartRef" class="chart" style="height: 300px; width: 100%" />
             </div>
             <div class="chart-container">
               <h4>差价同比</h4>
-              <div ref="profitComparisonChartRef" class="chart" style="height: 300px; width: 100%"></div>
+              <div ref="profitComparisonChartRef" class="chart" style="height: 300px; width: 100%" />
             </div>
             <div class="chart-container">
               <h4>增值业务同比</h4>
-              <div ref="valueAddedComparisonChartRef" class="chart" style="height: 300px; width: 100%"></div>
+              <div ref="valueAddedComparisonChartRef" class="chart" style="height: 300px; width: 100%" />
             </div>
           </div>
         </div>
-        
-        <div class="section" v-if="staffDetailData.length > 0">
+
+        <div v-if="staffDetailData.length > 0" class="section">
           <h3 class="section-title">业务员明细（单位：万元）</h3>
           <div class="table-container">
             <el-table :data="staffDetailData" style="width: 100%">
@@ -298,26 +298,26 @@ export default {
     this.summaryDimension = this.$route.query.summaryDimension || 'staff'
     this.timeDimension = this.$route.query.timeDimension || 'month'
     this.selectedYear = this.$route.query.selectedYear ? parseInt(this.$route.query.selectedYear) : new Date().getFullYear()
-    
+
     this.staffName = this.$route.query.staffName || ''
     this.parentDepartment = this.$route.query.parentDepartment || ''
     this.department = this.$route.query.department || ''
     this.businessLine = this.$route.query.businessLine || ''
     this.branch = this.$route.query.branch || ''
-    
+
     const now = new Date()
     const currentYear = now.getFullYear()
     const selectedDate = new Date(this.selectedYear, now.getMonth(), now.getDate())
     const tomorrow = new Date(selectedDate)
     tomorrow.setDate(selectedDate.getDate() + 1)
-    
+
     const formatDate = (date) => {
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
       return `${year}-${month}-${day}`
     }
-    
+
     if (this.selectedYear === currentYear) {
       this.startDate = `${this.selectedYear}-01-01`
       this.endDate = formatDate(tomorrow)
@@ -325,15 +325,15 @@ export default {
       this.startDate = `${this.selectedYear}-01-01`
       this.endDate = `${this.selectedYear + 1}-01-01`
     }
-    
+
     const currentUserName = getCurrentUserName()
     const admin = isAdmin()
     const dataPermissions = getDataPermissions()
-    
+
     let employeeRealName = ''
     for (let i = 0; i < dataPermissions.length; i++) {
       const dataPerm = dataPermissions[i]
-      
+
       if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
         for (let j = 0; j < dataPerm.permissions.length; j++) {
           const perm = dataPerm.permissions[j]
@@ -344,20 +344,20 @@ export default {
         }
         if (employeeRealName) break
       }
-      
+
       if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
         employeeRealName = dataPerm.permissionName || ''
         break
       }
     }
-    
+
     const currentUserRealName = employeeRealName || currentUserName
-    
+
     if (!this.salesperson) {
       this.salesperson = encodeURIComponent(currentUserRealName)
       this.staffList = [currentUserRealName]
     }
-    
+
     this.initSalesComparisonChart()
     this.initProfitComparisonChart()
     this.initValueAddedComparisonChart()
@@ -365,17 +365,33 @@ export default {
     this.loadStaffDetailData()
     window.addEventListener('resize', this.handleResize)
   },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize)
+    if (this.salesComparisonChart) {
+      this.salesComparisonChart.dispose()
+      this.salesComparisonChart = null
+    }
+    if (this.profitComparisonChart) {
+      this.profitComparisonChart.dispose()
+      this.profitComparisonChart = null
+    }
+    if (this.valueAddedComparisonChart) {
+      this.valueAddedComparisonChart.dispose()
+      this.valueAddedComparisonChart = null
+    }
+    this.dataCache = {}
+  },
   methods: {
     async loadSalesTargetData() {
       try {
         const currentUserName = getCurrentUserName()
         const admin = isAdmin()
         const dataPermissions = getDataPermissions()
-        
+
         let employeeRealName = ''
         for (let i = 0; i < dataPermissions.length; i++) {
           const dataPerm = dataPermissions[i]
-          
+
           if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
             for (let j = 0; j < dataPerm.permissions.length; j++) {
               const perm = dataPerm.permissions[j]
@@ -386,38 +402,38 @@ export default {
             }
             if (employeeRealName) break
           }
-          
+
           if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
             employeeRealName = dataPerm.permissionName || ''
             break
           }
         }
-        
+
         const currentUserRealName = employeeRealName || currentUserName
-        
+
         const yearStartDate = `${this.selectedYear}-01-01`
         const yearEndDate = `${this.selectedYear}-12-31`
-        
+
         const params = this.buildQueryParams(yearStartDate, yearEndDate, '', currentUserRealName, admin)
         const response = await getSalesProfitReport(params)
-        
+
         console.log('Target data response:', response)
-        
+
         if (response && response.data) {
           const dataArray = Array.isArray(response.data) ? response.data : (response.data.data || [])
-          
+
           let totalMB_sales = 0
           let totalMB_profit = 0
           let totalMB_sales_zz = 0
-          
+
           dataArray.forEach(item => {
             totalMB_sales += parseFloat(item.MB_sales) || parseFloat(item['MB_sales']) || 0
             totalMB_profit += parseFloat(item.MB_profit) || parseFloat(item['MB_profit']) || 0
             totalMB_sales_zz += parseFloat(item.MB_sales_zz) || parseFloat(item['MB_sales_zz']) || 0
           })
-          
+
           console.log('Target values:', { totalMB_sales, totalMB_profit, totalMB_sales_zz })
-          
+
           this.targets = {
             yearSales: totalMB_sales,
             yearProfit: totalMB_profit,
@@ -428,25 +444,25 @@ export default {
         console.error('Failed to load target data:', error)
       }
     },
-    
+
     async loadData() {
       if (this.isRequesting) {
         return
       }
-      
+
       this.loading = true
       this.error = null
       this.isRequesting = true
-      
+
       try {
         const currentUserName = getCurrentUserName()
         const admin = isAdmin()
         const dataPermissions = getDataPermissions()
-        
+
         let employeeRealName = ''
         for (let i = 0; i < dataPermissions.length; i++) {
           const dataPerm = dataPermissions[i]
-          
+
           if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
             for (let j = 0; j < dataPerm.permissions.length; j++) {
               const perm = dataPerm.permissions[j]
@@ -457,27 +473,27 @@ export default {
             }
             if (employeeRealName) break
           }
-          
+
           if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
             employeeRealName = dataPerm.permissionName || ''
             break
           }
         }
-        
+
         const currentUserRealName = employeeRealName || currentUserName
-        
+
         const now = new Date()
         const selectedDate = new Date(this.selectedYear, now.getMonth(), now.getDate())
         const tomorrow = new Date(selectedDate)
         tomorrow.setDate(selectedDate.getDate() + 1)
-        
+
         const formatDate = (date) => {
           const year = date.getFullYear()
           const month = String(date.getMonth() + 1).padStart(2, '0')
           const day = String(date.getDate()).padStart(2, '0')
           return `${year}-${month}-${day}`
         }
-        
+
         const currentYear = new Date().getFullYear()
 
         if (this.selectedYear === currentYear) {
@@ -487,37 +503,37 @@ export default {
           this.startDate = `${this.selectedYear}-01-01`
           this.endDate = `${this.selectedYear + 1}-01-01`
         }
-        
+
         const yearRanges = []
         const currentMonth = String(now.getMonth() + 1).padStart(2, '0')
         const currentDay = String(now.getDate()).padStart(2, '0')
-        
+
         for (let i = 0; i < 5; i++) {
           const year = this.selectedYear - i
           let endDate
-          
+
           if (this.selectedYear === currentYear) {
             endDate = year === currentYear ? formatDate(tomorrow) : `${year}-${currentMonth}-${currentDay}`
           } else {
             endDate = `${year + 1}-01-01`
           }
-          
+
           yearRanges.push({
             year: year,
             startDate: `${year}-01-01`,
             endDate: endDate
           })
         }
-        
-        const cacheKeys = yearRanges.map(range => 
+
+        const cacheKeys = yearRanges.map(range =>
           `${this.timeDimension}_${this.salesperson}_${range.year}_${range.startDate}_${range.endDate}_${currentUserName}`
         )
-        
+
         const cachedResponses = cacheKeys.map(key => this.getCacheData(key))
-        
+
         const requests = []
         const requestCacheKeys = []
-        
+
         cachedResponses.forEach((response, index) => {
           if (!response) {
             const range = yearRanges[index]
@@ -526,15 +542,15 @@ export default {
             requestCacheKeys.push(cacheKeys[index])
           }
         })
-        
+
         if (requests.length > 0) {
           const results = await Promise.allSettled(requests)
-          
+
           results.forEach((result, index) => {
             if (result.status === 'fulfilled') {
               const response = result.value
               this.setCacheData(requestCacheKeys[index], response)
-              
+
               const cacheKeyIndex = cacheKeys.indexOf(requestCacheKeys[index])
               if (cacheKeyIndex !== -1) {
                 cachedResponses[cacheKeyIndex] = response
@@ -544,7 +560,7 @@ export default {
             }
           })
         }
-        
+
         this.processAndMergeData(cachedResponses, yearRanges)
       } catch (error) {
         console.error('Failed to load detail data:', error)
@@ -554,7 +570,7 @@ export default {
         this.isRequesting = false
       }
     },
-    
+
     processAndMergeData(cachedResponses, yearRanges) {
       try {
         const yearlyData = yearRanges.map((range, index) => {
@@ -586,30 +602,30 @@ export default {
         if (lastYearData && cachedResponses[0]) {
           const lastYearResponse = cachedResponses[0]
           console.log('lastYearResponse (most recent):', lastYearResponse)
-          
+
           let dataArray = null
           if (Array.isArray(lastYearResponse)) {
             dataArray = lastYearResponse
           } else if (lastYearResponse && lastYearResponse.data) {
             dataArray = lastYearResponse.data
           }
-          
+
           console.log('dataArray:', dataArray)
-          
+
           if (dataArray && Array.isArray(dataArray)) {
             console.log('dataArray is array, length:', dataArray.length)
             let totalMB_sales = 0
             let totalMB_profit = 0
             let totalMB_sales_zz = 0
-            
+
             dataArray.forEach(item => {
               totalMB_sales += parseFloat(item.MB_sales) || parseFloat(item['MB_sales']) || 0
               totalMB_profit += parseFloat(item.MB_profit) || parseFloat(item['MB_profit']) || 0
               totalMB_sales_zz += parseFloat(item.MB_sales_zz) || parseFloat(item['MB_sales_zz']) || 0
             })
-            
+
             console.log('Target values from most recent year:', { totalMB_sales, totalMB_profit, totalMB_sales_zz })
-            
+
             this.targets = {
               yearSales: totalMB_sales,
               yearProfit: totalMB_profit,
@@ -630,45 +646,45 @@ export default {
         console.error('Error processing and merging data:', error)
       }
     },
-    
+
     calculateTotalFromResponse(response) {
       let totalSales = 0
       let totalProfit = 0
       let totalValueAdded = 0
-      
+
       let actualData = response
       if (response && typeof response === 'object' && response.data) {
         actualData = response.data
       }
-      
+
       if (actualData && Array.isArray(actualData)) {
         actualData.forEach(item => {
           const sales = parseFloat(item['含税销售额']) || parseFloat(item.sales) || 0
           const profit = parseFloat(item['不含税毛利差价']) || parseFloat(item.profit) || 0
           const valueAdded = parseFloat(item.valueAdded) || 0
-          
+
           totalSales += sales
           totalProfit += profit
           totalValueAdded += valueAdded
         })
       }
-      
+
       return {
         sales: totalSales,
         profit: totalProfit,
         valueAdded: totalValueAdded
       }
     },
-    
+
     calculateGap(current, previous) {
       if (previous === 0) return 0
       return Math.round(((current - previous) / previous) * 100)
     },
-    
+
     goBack() {
       this.$router.push('/data-platform')
     },
-    
+
     formatCurrency(value) {
       return new Intl.NumberFormat('zh-CN', {
         style: 'decimal',
@@ -676,17 +692,17 @@ export default {
         maximumFractionDigits: 0
       }).format(value)
     },
-    
+
     formatWan(value) {
       const wan = value / 10000
-      return wan.toFixed(1) 
+      return wan.toFixed(1)
     },
-    
+
     initSalesComparisonChart() {
       this.salesComparisonChart = echarts.init(this.$refs.salesComparisonChartRef)
       this.updateSalesComparisonChart()
     },
-    
+
     updateSalesComparisonChart() {
       if (!this.salesComparisonChart) return
 
@@ -763,17 +779,17 @@ export default {
 
       this.salesComparisonChart.setOption(option)
     },
-    
+
     initProfitComparisonChart() {
       this.profitComparisonChart = echarts.init(this.$refs.profitComparisonChartRef)
       this.updateProfitComparisonChart()
     },
-    
+
     initValueAddedComparisonChart() {
       this.valueAddedComparisonChart = echarts.init(this.$refs.valueAddedComparisonChartRef)
       this.updateValueAddedComparisonChart()
     },
-    
+
     updateProfitComparisonChart() {
       if (!this.profitComparisonChart) return
 
@@ -850,7 +866,7 @@ export default {
 
       this.profitComparisonChart.setOption(option)
     },
-    
+
     updateValueAddedComparisonChart() {
       if (!this.valueAddedComparisonChart) return
 
@@ -927,7 +943,7 @@ export default {
 
       this.valueAddedComparisonChart.setOption(option)
     },
-    
+
     handleResize() {
       if (this.salesComparisonChart) {
         this.salesComparisonChart.resize()
@@ -939,36 +955,36 @@ export default {
         this.valueAddedComparisonChart.resize()
       }
     },
-    
+
     getCacheData(key) {
       const cacheItem = this.dataCache[key]
       if (!cacheItem) {
         return null
       }
-      
+
       const now = Date.now()
       if (now - cacheItem.timestamp > 30000) {
         delete this.dataCache[key]
         return null
       }
-      
+
       return cacheItem.data
     },
-    
+
     setCacheData(key, data) {
       this.dataCache[key] = {
         data: data,
         timestamp: Date.now()
       }
     },
-    
+
     async loadValueAddedBusinessData() {
       try {
         console.log('loadValueAddedBusinessData called')
         const currentUserName = getCurrentUserName()
         const currentYear = new Date().getFullYear()
         let startDate, endDate
-        
+
         if (this.selectedYear === currentYear) {
           const now = new Date()
           const selectedDate = new Date(this.selectedYear, now.getMonth(), now.getDate())
@@ -980,14 +996,14 @@ export default {
           startDate = `${this.selectedYear}-01-01`
           endDate = `${this.selectedYear + 1}-01-01`
         }
-        
+
         const params = {
           startDate: startDate,
           endDate: endDate
         }
-        
+
         const targetValue = this.salesperson ? decodeURIComponent(this.salesperson) : ''
-        
+
         switch (this.summaryDimension) {
           case 'staff':
             params.personNameList = targetValue
@@ -1020,22 +1036,22 @@ export default {
             params.sGroupList = targetValue
             break
         }
-        
+
         console.log('Value Added Business params:', params)
-        
+
         const cacheKey = `value_added_${this.summaryDimension}_${this.selectedYear}_${targetValue}_${currentUserName}`
         const cachedData = this.getCacheData(cacheKey)
-        
+
         if (cachedData) {
           console.log('Using cached value added data:', cachedData)
           this.currentData.valueAdded = cachedData
           return
         }
-        
+
         console.log('Calling getValueAddedBusiness API...')
         const response = await getValueAddedBusinessNew(params)
         console.log('Value Added Business response:', response)
-        
+
         if (response && Array.isArray(response)) {
           let totalValueAdded = 0
           response.forEach(item => {
@@ -1050,16 +1066,16 @@ export default {
         console.error('Failed to load value added business data:', error)
       }
     },
-    
+
     async loadStaffDetailData() {
       try {
         const currentUserName = getCurrentUserName()
         const dataPermissions = getDataPermissions()
-        
+
         let employeeRealName = ''
         for (let i = 0; i < dataPermissions.length; i++) {
           const dataPerm = dataPermissions[i]
-          
+
           if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
             for (let j = 0; j < dataPerm.permissions.length; j++) {
               const perm = dataPerm.permissions[j]
@@ -1070,26 +1086,26 @@ export default {
             }
             if (employeeRealName) break
           }
-          
+
           if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
             employeeRealName = dataPerm.permissionName || ''
             break
           }
         }
-        
+
         const currentUserRealName = employeeRealName || currentUserName
-        
+
         const now = new Date()
         const currentYear = now.getFullYear()
         let currentStartDate, currentEndDate
-        
+
         const formatDate = (date) => {
           const year = date.getFullYear()
           const month = String(date.getMonth() + 1).padStart(2, '0')
           const day = String(date.getDate()).padStart(2, '0')
           return `${year}-${month}-${day}`
         }
-        
+
         if (this.selectedYear === currentYear) {
           const selectedDate = new Date(this.selectedYear, now.getMonth(), now.getDate())
           const tomorrow = new Date(selectedDate)
@@ -1100,18 +1116,18 @@ export default {
           currentStartDate = `${this.selectedYear}-01-01`
           currentEndDate = `${this.selectedYear + 1}-01-01`
         }
-        
+
         const params = this.buildQueryParams(currentStartDate, currentEndDate, '', currentUserRealName, false)
         const cacheKey = `${this.summaryDimension}_staff_detail_full_${currentStartDate}_${currentEndDate}_${this.salesperson}_${currentUserName}`
-        
+
         const cachedData = this.getCacheData(cacheKey)
         if (cachedData) {
           this.staffDetailData = cachedData
           return
         }
-        
+
         const response = await getSalesProfitReport(params)
-        
+
         if (response && Array.isArray(response)) {
           const rawData = response.map(item => {
             const staffName = item['业务员'] || item.staffName || '未知'
@@ -1131,7 +1147,7 @@ export default {
             const yearEndTaxDiff = parseFloat(item['年底补税差-']) || 0
             const platformFee = parseFloat(item['平台抽点费-']) || 0
             const taxFreeGrossDiff = parseFloat(item['不含税毛利差价']) || parseFloat(item.profit) || 0
-            
+
             return {
               staffName,
               department,
@@ -1152,7 +1168,7 @@ export default {
               taxFreeGrossDiff
             }
           }).filter(item => item.sales > 0 || item.taxFreeGrossDiff > 0)
-          
+
           this.setCacheData(cacheKey, rawData)
           this.staffDetailData = rawData
         }
@@ -1161,26 +1177,26 @@ export default {
         this.staffDetailData = []
       }
     },
-    
+
     filterByDepartmentPermission(data, departmentPermissionNames, hasAllPermission, isAdminUser) {
       if (isAdminUser || hasAllPermission) {
         return data
       }
-      
+
       if (!departmentPermissionNames || departmentPermissionNames.length === 0) {
         return data
       }
-      
+
       return data.filter(item => {
         if (!item.department) {
           return false
         }
-        return departmentPermissionNames.some(permName => 
+        return departmentPermissionNames.some(permName =>
           item.department.includes(permName) || permName.includes(item.department)
         )
       })
     },
-    
+
     buildQueryParams(startDate, endDate, _staffName, currentUserName, admin) {
       const params = {
         startDate: startDate,
@@ -1191,10 +1207,10 @@ export default {
         branch: this.branch || '',
         staffName: this.staffName || ''
       }
-      
+
       return params
     },
-    
+
     cleanExpiredCache() {
       const now = Date.now()
       for (const key in this.dataCache) {
@@ -1206,22 +1222,6 @@ export default {
         }
       }
     }
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
-    if (this.salesComparisonChart) {
-      this.salesComparisonChart.dispose()
-      this.salesComparisonChart = null
-    }
-    if (this.profitComparisonChart) {
-      this.profitComparisonChart.dispose()
-      this.profitComparisonChart = null
-    }
-    if (this.valueAddedComparisonChart) {
-      this.valueAddedComparisonChart.dispose()
-      this.valueAddedComparisonChart = null
-    }
-    this.dataCache = {}
   }
 }
 </script>

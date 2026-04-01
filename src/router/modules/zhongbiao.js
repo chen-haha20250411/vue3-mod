@@ -5,8 +5,8 @@ const zhongbiaoRouter = {
   component: Layout,
   redirect: '/zhongbiao/list',
   name: 'Zhongbiao',
-  meta: { 
-    title: '中标数据', 
+  meta: {
+    title: '中标信息',
     icon: 'list'
   },
   children: [
@@ -14,8 +14,8 @@ const zhongbiaoRouter = {
       path: 'list',
       component: () => import('@/views/zhongbiao/list'),
       name: 'ZhongbiaoList',
-      meta: { 
-        title: '中标列表', 
+      meta: {
+        title: '中标列表',
         icon: 'list'
       }
     }

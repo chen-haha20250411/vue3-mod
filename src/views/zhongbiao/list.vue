@@ -20,53 +20,51 @@
         <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-refresh" @click="handleResetQuery()">重置</el-button>
       </div>
 
-
-
       <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;height:auto;">
         <el-table-column label="发布日期" width="120" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.publishDate }}</span>
           </template>
         </el-table-column>
         <el-table-column label="项目编号" width="160" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.projectNo }}</span>
           </template>
         </el-table-column>
         <el-table-column label="项目名称" min-width="250" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.title }}</span>
           </template>
         </el-table-column>
         <el-table-column label="招标单位" width="180" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.customer || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="公告类型" width="120" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.noticeType || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="中标人" width="180" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.winnerPrincipal || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="中标金额" width="120" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <span>{{ scope.row.winnerAmount ? '¥' + scope.row.winnerAmount : '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="详细内容" width="100" align="center">
-          <template v-slot="scope">
+          <template #default="scope">
             <el-button v-if="scope.row.html_url" type="text" size="mini" @click="viewDetail(scope.row)">查看详情</el-button>
             <span v-else>-</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <pagination v-show=" total>0" style="float:right" :total="total" v-model:page="q.currPageNo" v-model:limit="q.limit" @size-change="handleSizeChange" @current-change="handleCurrentChange" @pagination="getList" />
+      <pagination v-show=" total>0" v-model:page="q.currPageNo" v-model:limit="q.limit" style="float:right" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" @pagination="getList" />
     </div>
     <el-card v-show="!showList">
       <span>{{ title }}</span>

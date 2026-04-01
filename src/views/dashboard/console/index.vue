@@ -21,7 +21,7 @@
 
     <div class="dashboard-content">
       <el-row :gutter="20" class="stat-row">
-        <el-col :xs="12" :sm="6" :lg="3" v-for="(stat, index) in statCards" :key="index">
+        <el-col v-for="(stat, index) in statCards" :key="index" :xs="12" :sm="6" :lg="3">
           <div class="stat-card" :class="stat.color">
             <div class="stat-icon">
               <svg-icon :icon-class="stat.icon" />

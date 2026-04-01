@@ -5,8 +5,8 @@ const biddingInfoRouter = {
   component: Layout,
   redirect: '/biddingInfo/list',
   name: 'BiddingInfo',
-  meta: { 
-    title: '投标数据', 
+  meta: {
+    title: '投标数据',
     icon: 'table'
   },
   children: [
@@ -14,8 +14,8 @@ const biddingInfoRouter = {
       path: 'list',
       component: () => import('@/views/biddingInfo/list'),
       name: 'BiddingInfoList',
-      meta: { 
-        title: '招标信息', 
+      meta: {
+        title: '招标信息',
         icon: 'table'
       }
     }

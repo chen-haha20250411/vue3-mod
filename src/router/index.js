@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import NProgress from 'nprogress'
 import Layout from '@/layout'
+import systemRouter from './modules/system'
 
 /**
  * 路由 meta 字段说明:
@@ -122,7 +123,22 @@ export const constantRoutes = [
         meta: { title: '客户行业看板', icon: 'pie' }
       }
     ]
-  }
+  },
+  {
+    path: '/system/data-permission',
+    component: Layout,
+    redirect: '/system/data-permission/index',
+    meta: { title: '数据权限管理', icon: 'lock' },
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/data-permission/index'),
+        name: 'DataPermissionConfig',
+        meta: { title: '数据权限管理', icon: 'peoples' }
+      }
+    ]
+  },
+  systemRouter
 ]
 
 /**

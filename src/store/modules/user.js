@@ -41,10 +41,10 @@ function convertPermissionsToTree(data) {
 
 function extractMenuUrls(menus) {
   const urls = []
-  
+
   function traverse(menuList) {
     if (!menuList || !Array.isArray(menuList)) return
-    
+
     menuList.forEach(menu => {
       if (menu.menuURL || menu.menuUrl) {
         const url = menu.menuURL || menu.menuUrl
@@ -52,13 +52,13 @@ function extractMenuUrls(menus) {
           urls.push(url)
         }
       }
-      
+
       if (menu.subMenuList && menu.subMenuList.length > 0) {
         traverse(menu.subMenuList)
       }
     })
   }
-  
+
   traverse(menus)
   return urls
 }
@@ -112,8 +112,8 @@ const actions = {
       loginByUsername(username, password, code, captchaKey)
         .then(response => {
           const data = response || {}
-          const token = data.token || data.accessToken || data.access_token || data.Token || ''
-          const loginName = data.loginName || data.login_name || data.username || username
+          const token = (data.data && (data.data.token || data.data.accessToken || data.data.access_token || data.data.Token)) || data.token || data.accessToken || data.access_token || data.Token || ''
+          const loginName = (data.data && (data.data.loginName || data.data.login_name || data.data.username)) || data.loginName || data.login_name || data.username || username
 
           if (!token) {
             ElMessage.error('登录失败：未返回token')
@@ -136,7 +136,7 @@ const actions = {
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
       getUserInfo().then(response => {
-        let data = response
+        const data = response
 
         if (!data) {
           reject('Verification failed, please Login again.')
@@ -174,42 +174,43 @@ const actions = {
         commit('SET_AVATAR', avatar)
         commit('SET_INTRODUCTION', introduction)
         commit('SET_PERMISSIONS', permissions)
-        
-        let dataPermissions = data.dataPermissions || 
-                              user.dataPermissions || 
-                              data.data_permissions || 
-                              user.data_permissions || 
+
+        let dataPermissions = data.dataPermissions ||
+                              user.dataPermissions ||
+                              data.data_permissions ||
+                              user.data_permissions ||
                               []
-        
+
         if (!Array.isArray(dataPermissions)) {
           dataPermissions = [dataPermissions]
         }
-        
+
         commit('SET_DATA_PERMISSIONS', dataPermissions)
 
         const buildMenuTree = (menuData) => {
+          if (!Array.isArray(menuData)) return []
           return menuData.map(menu => {
             const menuItem = {
               menuId: menu.menu_id || menu.menuId,
               menuName: menu.menu_name || menu.menuName,
               menuURL: menu.menu_url || menu.menuURL || menu.menuUrl || '#',
-              imageurl: menu.imageurl,
+              imageurl: menu.imageurl || menu.icon,
               menu_auth: menu.menu_auth,
               subMenuList: [],
               btnList: menu.btnList || []
             }
-            
+
             const childMenus = menu.children || menu.subMenuList
             if (childMenus && Array.isArray(childMenus) && childMenus.length > 0) {
               menuItem.subMenuList = buildMenuTree(childMenus)
             }
-            
+
             return menuItem
           })
         }
-        
-        const treePermissions = convertPermissionsToTree(permissions)
-        const menus = Array.isArray(treePermissions) ? buildMenuTree(treePermissions) : []
+
+        // 直接使用 permissions 构建菜单树
+        const menus = Array.isArray(permissions) ? buildMenuTree(permissions) : []
 
         resolve({ ...data, roles, permissions, menus })
       }).catch(error => {

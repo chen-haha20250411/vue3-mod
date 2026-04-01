@@ -48,11 +48,11 @@ export default {
     moveToTarget(currentTag) {
       const $container = this.$refs.scrollContainer?.$el
       if (!$container) return
-      
+
       const $containerWidth = $container.offsetWidth
       const $scrollWrapper = this.scrollWrapper
       if (!$scrollWrapper) return
-      
+
       const tagList = this.$parent?.$refs?.tag
       if (!tagList || tagList.length === 0) return
 

@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function getDataPermissions(params) {
   return request({
-    url: '/vue-element-admin/data-permissions',
+    url: '/api/dataPermission/list',
     method: 'get',
     params
   })
@@ -10,14 +10,14 @@ export function getDataPermissions(params) {
 
 export function getDataPermission(id) {
   return request({
-    url: `/vue-element-admin/data-permissions/${id}`,
+    url: `/api/dataPermission/${id}`,
     method: 'get'
   })
 }
 
 export function createDataPermission(data) {
   return request({
-    url: '/vue-element-admin/data-permissions',
+    url: '/api/dataPermission/create',
     method: 'post',
     data
   })
@@ -25,7 +25,7 @@ export function createDataPermission(data) {
 
 export function updateDataPermission(id, data) {
   return request({
-    url: `/vue-element-admin/data-permissions/${id}`,
+    url: `/api/dataPermission/update/${id}`,
     method: 'put',
     data
   })
@@ -33,7 +33,7 @@ export function updateDataPermission(id, data) {
 
 export function deleteDataPermission(id) {
   return request({
-    url: `/vue-element-admin/data-permissions/${id}`,
+    url: `/api/dataPermission/delete/${id}`,
     method: 'delete'
   })
 }

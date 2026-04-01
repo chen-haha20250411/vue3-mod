@@ -19,15 +19,16 @@ function loadComponent(path) {
 }
 
 function buildRoute(menu) {
-  const menuId = menu.menuId
-  const menuName = menu.menuName
-  const menuUrl = menu.menuURL || menu.menuUrl || '#'
+  const menuId = menu.menuId || menu.menu_id
+  const menuName = menu.menuName || menu.menu_name
+  const menuUrl = menu.menuURL || menu.menuUrl || menu.menu_url || '#'
   const icon = menu.imageurl || menu.icon || 'table'
   const menuAuth = menu.menu_auth
   const btnList = menu.btnList || []
 
-  const hasChildren = menu.subMenuList && menu.subMenuList.length > 0
-  const validChildren = hasChildren ? menu.subMenuList.filter(sub => {
+  const hasChildren = (menu.subMenuList && menu.subMenuList.length > 0) || (menu.children && menu.children.length > 0)
+  const childMenuList = menu.subMenuList || menu.children || []
+  const validChildren = hasChildren ? childMenuList.filter(sub => {
     const subUrl = sub.menuURL || sub.menuUrl
     if (subUrl && subUrl !== '#') return true
     // 保留有子菜单的目录节点
@@ -131,15 +132,16 @@ function buildRoute(menu) {
 }
 
 function buildChildRoute(menu, parentPath) {
-  const menuId = menu.menuId
-  const menuName = menu.menuName
-  const menuUrl = menu.menuURL || menu.menuUrl || '#'
+  const menuId = menu.menuId || menu.menu_id
+  const menuName = menu.menuName || menu.menu_name
+  const menuUrl = menu.menuURL || menu.menuUrl || menu.menu_url || '#'
   const icon = menu.imageurl || menu.icon || 'table'
   const menuAuth = menu.menu_auth
   const btnList = menu.btnList || []
 
-  const hasChildren = menu.subMenuList && menu.subMenuList.length > 0
-  const validChildren = hasChildren ? menu.subMenuList.filter(sub => {
+  const hasChildren = (menu.subMenuList && menu.subMenuList.length > 0) || (menu.children && menu.children.length > 0)
+  const childMenuList = menu.subMenuList || menu.children || []
+  const validChildren = hasChildren ? childMenuList.filter(sub => {
     const subUrl = sub.menuURL || sub.menuUrl
     if (subUrl && subUrl !== '#') return true
     // 保留有子菜单的目录节点
@@ -230,6 +232,44 @@ const actions = {
 
       if (menus && menus.length > 0) {
         accessedRoutes = generateRoutesFromMenus(menus)
+
+        // 去重：移除与静态路由重复的菜单
+        const staticRouteTitles = constantRoutes
+          .filter(route => !route.hidden && route.meta && route.meta.title)
+          .map(route => route.meta.title)
+
+        // 同时检查子菜单的标题
+        constantRoutes.forEach(route => {
+          if (route.children && route.children.length > 0) {
+            route.children.forEach(childRoute => {
+              if (!childRoute.hidden && childRoute.meta && childRoute.meta.title) {
+                staticRouteTitles.push(childRoute.meta.title)
+              }
+            })
+          }
+        })
+
+        // 移除与静态路由标题重复的菜单项
+        accessedRoutes = accessedRoutes.filter(route => {
+          // 检查当前路由标题
+          if (route.meta && route.meta.title && staticRouteTitles.includes(route.meta.title)) {
+            return false
+          }
+
+          // 检查子路由标题
+          if (route.children && route.children.length > 0) {
+            route.children = route.children.filter(childRoute => {
+              return !(childRoute.meta && childRoute.meta.title && staticRouteTitles.includes(childRoute.meta.title))
+            })
+
+            // 如果父路由没有子路由了，也移除父路由
+            if (route.children.length === 0) {
+              return false
+            }
+          }
+
+          return true
+        })
       } else {
         accessedRoutes = []
       }

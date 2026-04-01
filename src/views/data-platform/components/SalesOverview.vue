@@ -121,13 +121,13 @@
 
     <div class="chart-section">
       <h3 class="section-title">{{ getDimensionLabel }}销售数据</h3>
-      <div ref="chartRef" class="chart-container"></div>
+      <div ref="chartRef" class="chart-container" />
     </div>
 
     <div class="completion-rate-section">
       <h3 class="section-title">销售完成率情况</h3>
       <el-table :data="tableData" border stripe style="width: 100%; margin-top: 15px;">
-        <el-table-column prop="category" :label="getDimensionLabel" width="140"></el-table-column>
+        <el-table-column prop="category" :label="getDimensionLabel" width="140" />
         <el-table-column prop="mbSales" label="年销售额目标" width="120">
           <template #default="scope">
             <span style="color: #1c9099;">{{ formatCurrency(scope.row.mbSales) }}</span>
@@ -191,7 +191,7 @@
             </span>
           </template>
         </el-table-column>
-        
+
       </el-table>
     </div>
 
@@ -277,7 +277,7 @@ export default {
       currentData.forEach(item => {
         const category = item.category || item[dimensionKey] || ''
         if (!category) return
-        
+
         if (!groupedData.has(category)) {
           groupedData.set(category, {
             category,
@@ -340,7 +340,7 @@ export default {
       this.listLoading = true
       const currentUserName = getCurrentUserName()
       const admin = isAdmin()
-      
+
       const dataPermissions = getDataPermissions()
       let employeeName = ''
       let permissionValue = ''
@@ -378,7 +378,7 @@ export default {
         startDate,
         endDate
       }
-      
+
       if (permissionValue !== 'ALL') {
         currentParams.staffName = staffName
       }
@@ -387,7 +387,7 @@ export default {
         startDate: lastYearStartDate,
         endDate: lastYearEndDate
       }
-      
+
       if (permissionValue !== 'ALL') {
         lastYearParams.staffName = staffName
       }
@@ -396,12 +396,10 @@ export default {
         startDate: twoYearsAgoStartDate,
         endDate: twoYearsAgoEndDate
       }
-      
+
       if (permissionValue !== 'ALL') {
         twoYearsAgoParams.staffName = staffName
       }
-
-    
 
       try {
         const [currentResponse, lastYearResponse, twoYearsAgoResponse] = await Promise.all([
@@ -472,7 +470,7 @@ export default {
 
         const userNameList = currentUserRealName.split(',').map(n => n.trim()).filter(n => n)
 
-      return dataArray.filter(item => {
+        return dataArray.filter(item => {
           if (admin) return true
           if (this.summaryDimension === 'staff') {
             const salesStaff = item['业务员'] || ''
@@ -811,7 +809,7 @@ export default {
       const today = new Date()
       const currentMonth = today.getMonth() + 1
       let quarterCoefficient = 0
-      
+
       if (currentMonth >= 1 && currentMonth <= 3) {
         quarterCoefficient = 0.17
       } else if (currentMonth >= 4 && currentMonth <= 6) {
@@ -926,11 +924,11 @@ export default {
     initChart() {
       this.chartRef = this.$refs.chartRef
       if (!this.chartRef) return
-      
+
       this.chartInstance = echarts.init(this.chartRef)
       this.chartInstance.on('click', this.handleChartClick)
       this.updateChart()
-      
+
       window.addEventListener('resize', () => {
         if (this.chartInstance) {
           this.chartInstance.resize()
@@ -1036,9 +1034,9 @@ export default {
       const category = params.name
       const dimension = this.summaryDimension
       const dimensionLabel = this.getDimensionLabel
-      
+
       let queryParams = {}
-      
+
       if (dimension === 'staff') {
         queryParams = {
           staffName: category,
@@ -1080,7 +1078,7 @@ export default {
           branch: category
         }
       }
-      
+
       this.$router.push({
         path: '/data-platform/detail',
         query: {

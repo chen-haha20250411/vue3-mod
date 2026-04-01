@@ -112,18 +112,13 @@ module.exports = {
     isAdmin: function() {
       var adminRoles = ['admin', '超级管理员', '管理员', 'role_1']
       var self = this
-      
-      console.log('当前用户角色数组:', self.roles)
-      console.log('当前用户名称:', self.name)
-      
+
       if (!self.roles || self.roles.length === 0) {
-        console.warn('角色数据为空，可能还未加载完成')
         return false
       }
-      
+
       return self.roles.some(function(role) {
         var roleName = role ? role.toLowerCase() : ''
-        console.log('检查角色:', role, '->', roleName)
         return adminRoles.some(function(admin) {
           return roleName.indexOf(admin.toLowerCase()) !== -1
         })
@@ -139,11 +134,7 @@ module.exports = {
       if (!self.isAdmin()) {
         params.staffName = self.name
       }
-
-      console.log('请求参数:', params)
-      
       getSalesProfitReport(params).then(function(response) {
-        console.log('API响应:', response)
         if (response && response.success) {
           var chartData = self.processChartData(response.data || [])
           self.initChart(chartData)
@@ -155,15 +146,10 @@ module.exports = {
       })
     },
     processChartData: function(data) {
-      console.log('原始数据:', data)
-      
       var filtered = data.filter(function(item) {
         var sales = item['含税销售额'] || 0
         return sales >= 1
       })
-
-      console.log('过滤后数据(销售额>=1元):', filtered)
-
       filtered.sort(function(a, b) {
         return (b['含税销售额'] || 0) - (a['含税销售额'] || 0)
       })
@@ -179,8 +165,6 @@ module.exports = {
           return parseFloat(((item['不含税毛利差价'] || 0) / 10000).toFixed(1))
         })
       }
-
-      console.log('处理后的图表数据:', result)
       return result
     },
     initChart: function(chartData) {

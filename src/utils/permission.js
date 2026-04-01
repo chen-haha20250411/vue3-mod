@@ -27,7 +27,7 @@ export default function checkPermission(value) {
 export function isAdmin() {
   const roles = store.state.user.roles || []
   const adminRoles = ['admin', '超级管理员', '管理员', 'role_1']
-  
+
   return roles.some(role => {
     const roleName = role ? role.toLowerCase() : ''
     return adminRoles.some(adminRole => {
@@ -67,7 +67,7 @@ export function getDataPermissions() {
  */
 export function getDataPermissionByType(permissionType) {
   const dataPermissions = store.state.user.dataPermissions || []
-  
+
   // dataPermissions 结构:
   // [
   //   {
@@ -82,17 +82,17 @@ export function getDataPermissionByType(permissionType) {
   //     ]
   //   }
   // ]
-  
+
   // 遍历外层数组
   for (let i = 0; i < dataPermissions.length; i++) {
     const dataPerm = dataPermissions[i]
-    
+
     // 检查是否有 permissions 数组
     if (dataPerm && dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
       // 遍历内层 permissions 数组
       for (let j = 0; j < dataPerm.permissions.length; j++) {
         const p = dataPerm.permissions[j]
-        
+
         if (p && p.permissionType) {
           if (p.permissionType.toLowerCase() === permissionType.toLowerCase()) {
             return p
@@ -100,7 +100,7 @@ export function getDataPermissionByType(permissionType) {
         }
       }
     }
-    
+
     // 兼容旧结构：直接在外层检查 permissionType
     if (dataPerm && dataPerm.permissionType) {
       if (dataPerm.permissionType.toLowerCase() === permissionType.toLowerCase()) {
@@ -108,7 +108,7 @@ export function getDataPermissionByType(permissionType) {
       }
     }
   }
-  
+
   return null
 }
 
@@ -122,7 +122,7 @@ export function getDataPermissionValues(permissionType) {
   if (!permission || !permission.permissionValue) {
     return []
   }
-  
+
   const value = permission.permissionValue.trim()
   if (value === 'ALL') {
     return ['ALL']
@@ -130,7 +130,7 @@ export function getDataPermissionValues(permissionType) {
   if (value === 'CURRENT_USER') {
     return ['CURRENT_USER']
   }
-  
+
   return value.split(',').map(v => v.trim()).filter(v => v)
 }
 
@@ -145,35 +145,35 @@ export function getDataPermissionNames(permissionType) {
     // console.log('No permission found for type:', permissionType)
     return []
   }
-  
+
   // console.log('Permission found, checking permissionName:', permission)
-  
+
   // 尝试多种字段名，包括不同大小写形式
-  const permissionName = permission.permissionName || 
-                        permission.PermissionName || 
-                        permission.PERMISSION_NAME || 
-                        permission.permission_name || 
-                        permission.name || 
-                        permission.Name || 
-                        permission.NAME || 
-                        permission.userName || 
-                        permission.UserName || 
-                        permission.USER_NAME || 
-                        permission.user_name || 
-                        permission.realName || 
-                        permission.RealName || 
-                        permission.REAL_NAME || 
-                        permission.real_name || 
+  const permissionName = permission.permissionName ||
+                        permission.PermissionName ||
+                        permission.PERMISSION_NAME ||
+                        permission.permission_name ||
+                        permission.name ||
+                        permission.Name ||
+                        permission.NAME ||
+                        permission.userName ||
+                        permission.UserName ||
+                        permission.USER_NAME ||
+                        permission.user_name ||
+                        permission.realName ||
+                        permission.RealName ||
+                        permission.REAL_NAME ||
+                        permission.real_name ||
                         ''
-  
+
   // console.log('Found permissionName:', permissionName)
-  
+
   if (permissionName) {
     const names = permissionName.split(',').map(v => v.trim()).filter(v => v)
     // console.log('Parsed permission names:', names)
     return names
   }
-  
+
   // console.log('No permissionName found in permission:', permission)
   return []
 }
