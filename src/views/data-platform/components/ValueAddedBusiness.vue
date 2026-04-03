@@ -25,11 +25,7 @@
 
     <el-table v-loading="listLoading" :data="tableData" border stripe style="width: 100%; margin-top: 15px;">
       <el-table-column prop="category" :label="getDimensionLabel" width="140" />
-      <el-table-column prop="salesAmount" label="含税销售额" width="130" align="right">
-        <template #default="scope">
-          <span style="color: #f56c6c; font-weight: bold;">{{ formatCurrency(scope.row.salesAmount) }}</span>
-        </template>
-      </el-table-column>
+
       <el-table-column prop="targetValueAddedAmount" label="增值业务目标" width="140" align="right">
         <template #default="scope">
           <span style="color: #1c9099; font-weight: bold;">{{ formatCurrency(scope.row.targetValueAddedAmount) }}</span>
@@ -45,6 +41,11 @@
           <span :style="{ color: scope.row.completionRate >= 100 ? '#f56c6c' : '#67c23a', fontWeight: '600' }">
             {{ scope.row.completionRate ? scope.row.completionRate.toFixed(2) + '%' : '-' }}
           </span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="salesAmount" label="含税销售额" width="130" align="right">
+        <template #default="scope">
+          <span style="color: #f56c6c; font-weight: bold;">{{ formatCurrency(scope.row.salesAmount) }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="valueAddedRate" label="增值业务占比" width="110" align="center">
@@ -207,14 +208,21 @@ export default {
 
       const dataArray = Array.isArray(response) ? response : (Array.isArray(response.data) ? response.data : (response.data?.data || []))
 
-      const isGroupDimension = ['business', 'branch'].includes(this.summaryDimension)
+      const isGroupDimension = ['business', 'branch', 'parentDept', 'department'].includes(this.summaryDimension)
 
       if (isGroupDimension) {
         const groupedMap = new Map()
         dataArray.forEach(item => {
-          const category = this.summaryDimension === 'business'
-            ? (item['业务线'] || '')
-            : (item['分支机构'] || '')
+          let category = ''
+          if (this.summaryDimension === 'business') {
+            category = item['业务线'] || ''
+          } else if (this.summaryDimension === 'branch') {
+            category = item['分支机构'] || ''
+          } else if (this.summaryDimension === 'parentDept') {
+            category = item['父级部门'] || ''
+          } else if (this.summaryDimension === 'department') {
+            category = item['部门'] || ''
+          }
           if (!category) return
 
           if (!groupedMap.has(category)) {
@@ -246,14 +254,21 @@ export default {
       }
       const dataArray = Array.isArray(response) ? response : (Array.isArray(response.data) ? response.data : (response.data?.data || []))
 
-      const isGroupDimension = ['business', 'branch'].includes(this.summaryDimension)
+      const isGroupDimension = ['business', 'branch', 'parentDept', 'department'].includes(this.summaryDimension)
 
       if (isGroupDimension) {
         const groupedMap = new Map()
         dataArray.forEach(item => {
-          const category = this.summaryDimension === 'business'
-            ? (item['业务线'] || '')
-            : (item['分支机构'] || '')
+          let category = ''
+          if (this.summaryDimension === 'business') {
+            category = item['业务线'] || ''
+          } else if (this.summaryDimension === 'branch') {
+            category = item['分支机构'] || ''
+          } else if (this.summaryDimension === 'parentDept') {
+            category = item['父级部门'] || ''
+          } else if (this.summaryDimension === 'department') {
+            category = item['部门'] || ''
+          }
           if (!category) return
 
           if (!groupedMap.has(category)) {

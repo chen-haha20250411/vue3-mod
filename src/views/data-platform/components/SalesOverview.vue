@@ -3,13 +3,34 @@
     <div class="filter-container">
       <div class="filter-section">
         <div class="filter-label">时间维度：</div>
-        <el-radio-group v-model="timeDimension" size="small" @change="handleTimeDimensionChange">
-          <el-radio-button label="week">周</el-radio-button>
-          <el-radio-button label="month">月</el-radio-button>
-          <el-radio-button label="quarter">季度</el-radio-button>
-          <el-radio-button label="year">年度</el-radio-button>
-          <el-radio-button label="cumulative">累计当前</el-radio-button>
-        </el-radio-group>
+        <el-select v-model="timeDimension" size="small" style="width: 120px;" @change="handleTimeDimensionChange">
+          <el-option label="周" value="week" />
+          <el-option label="月" value="month" />
+          <el-option label="季度" value="quarter" />
+          <el-option label="年度" value="year" />
+          <el-option label="累计当前" value="cumulative" />
+        </el-select>
+      </div>
+      <div v-if="timeDimension === 'month'" class="filter-section">
+        <div class="filter-label">选择月份：</div>
+        <el-select v-model="selectedMonth" size="small" style="width: 120px;" @change="handleTimeDimensionChange">
+          <el-option v-for="m in 12" :key="m" :label="`${m}月`" :value="m" />
+        </el-select>
+      </div>
+      <div v-if="timeDimension === 'quarter'" class="filter-section">
+        <div class="filter-label">选择季度：</div>
+        <el-select v-model="selectedQuarter" size="small" style="width: 120px;" @change="handleTimeDimensionChange">
+          <el-option label="一季度" :value="1" />
+          <el-option label="二季度" :value="2" />
+          <el-option label="三季度" :value="3" />
+          <el-option label="四季度" :value="4" />
+        </el-select>
+      </div>
+      <div v-if="timeDimension === 'year'" class="filter-section">
+        <div class="filter-label">选择年份：</div>
+        <el-select v-model="selectedYear" size="small" style="width: 120px;" @change="handleTimeDimensionChange">
+          <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
+        </el-select>
       </div>
       <div class="filter-section">
         <div class="filter-label">统计维度：</div>
@@ -20,6 +41,26 @@
           <el-radio-button label="business">按业务线</el-radio-button>
           <el-radio-button label="branch">按分支机构</el-radio-button>
         </el-radio-group>
+      </div>
+      <div v-if="staffList.length > 0" class="filter-section">
+        <div class="filter-label">业务员：</div>
+        <el-select
+          v-model="selectedStaffs"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          placeholder="全部业务员"
+          size="small"
+          style="width: 200px;"
+          @change="handleStaffChange"
+        >
+          <el-option
+            v-for="staff in staffList"
+            :key="staff"
+            :label="staff"
+            :value="staff"
+          />
+        </el-select>
       </div>
     </div>
 
@@ -51,7 +92,7 @@
           <div class="target-section">
             <div class="target-item">
               <span class="label">当前目标系数:</span>
-              <span class="value target-coefficient">{{ currentTargetCoefficient.toFixed(4) }}</span>
+              <span class="value target-coefficient">{{ currentTargetCoefficient.toFixed(3) }}</span>
             </div>
             <div class="target-item">
               <span class="label">目标销售额:</span>
@@ -127,54 +168,68 @@
     <div class="completion-rate-section">
       <h3 class="section-title">销售完成率情况</h3>
       <el-table :data="tableData" border stripe style="width: 100%; margin-top: 15px;">
-        <el-table-column prop="category" :label="getDimensionLabel" width="140" />
-        <el-table-column prop="mbSales" label="年销售额目标" width="120">
+        <el-table-column prop="category" :label="getDimensionLabel" width="130" />
+        <el-table-column prop="mbSales" label="年销售额目标" width="110">
           <template #default="scope">
-            <span style="color: #1c9099;">{{ formatCurrency(scope.row.mbSales) }}</span>
+            <span style="color: #000000; ">{{ formatCurrency(scope.row.mbSales) }}万</span>
           </template>
         </el-table-column>
-        <el-table-column prop="mbProfit" label="年差价目标" width="120">
+        <el-table-column prop="mbProfit" label="年差价目标" width="110">
           <template #default="scope">
-            <span style="color: #1c9099;">{{ formatCurrency(scope.row.mbProfit) }}</span>
+            <span style="color: #000000; ">{{ formatCurrency(scope.row.mbProfit) }}万</span>
           </template>
         </el-table-column>
         <el-table-column prop="sales" label="销售额" width="110">
           <template #default="scope">
-            <span style="font-weight: bold; color: #f56c6c;">{{ formatCurrency(scope.row.sales) }}</span>
+            <span style="font-weight: bold; color: #f56c6c;">{{ formatCurrency(scope.row.sales) }}万</span>
           </template>
         </el-table-column>
         <el-table-column prop="profit" label="差价" width="100">
           <template #default="scope">
-            <span style="font-weight: bold; color: #009688;">{{ formatCurrency(scope.row.profit) }}</span>
+            <span style="font-weight: bold; color: #009688;">{{ formatCurrency(scope.row.profit) }}万</span>
           </template>
         </el-table-column>
-        <el-table-column label="销售额达标" width="100" align="center">
+        <el-table-column label="销售额达标" width="110" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.salesCompletionRate >= 100 ? 'success' : 'warning'" size="small">
-              {{ scope.row.salesCompletionRate >= 100 ? '达标' : '未达标' }}
-            </el-tag>
+            <div>
+              <span :style="{ color: (scope.row.salesCompletionRate / 100 - scope.row.salesDiffBase) >= 0 ? '#f56c6c' : '#303133', fontWeight: '600' }">
+                {{ (scope.row.salesCompletionRate / 100 - scope.row.salesDiffBase) >= 0 ? '达标' : '未达标' }}
+              </span>
+              <div style="font-size: 12px; margin-top: 4px;">
+                <span :style="{ color: (scope.row.salesCompletionRate / 100 - scope.row.salesDiffBase) >= 0 ? '#f56c6c' : '#909399', fontWeight: '700' }">
+                  {{ (scope.row.salesCompletionRate / 100 - scope.row.salesDiffBase) >= 0 ? '+' : '' }}{{ ((scope.row.salesCompletionRate / 100 - scope.row.salesDiffBase) * 100).toFixed(2) }}%
+                </span>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="差价达标" width="100" align="center">
+        <el-table-column label="差价达标" width="110" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.profitCompletionRate >= 100 ? 'success' : 'warning'" size="small">
-              {{ scope.row.profitCompletionRate >= 100 ? '达标' : '未达标' }}
-            </el-tag>
+            <div>
+              <span :style="{ color: (scope.row.profitCompletionRate / 100 - scope.row.profitDiffBase) >= 0 ? '#f56c6c' : '#303133', fontWeight: '600' }">
+                {{ (scope.row.profitCompletionRate / 100 - scope.row.profitDiffBase) >= 0 ? '达标' : '未达标' }}
+              </span>
+              <div style="font-size: 12px; margin-top: 4px;">
+                <span :style="{ color: (scope.row.profitCompletionRate / 100 - scope.row.profitDiffBase) >= 0 ? '#f56c6c' : '#909399', fontWeight: '700' }">
+                  {{ (scope.row.profitCompletionRate / 100 - scope.row.profitDiffBase) >= 0 ? '+' : '' }}{{ ((scope.row.profitCompletionRate / 100 - scope.row.profitDiffBase) * 100).toFixed(2) }}%
+                </span>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="当前系数" width="100" align="center">
+        <el-table-column label="当前系数" width="90" align="center">
           <template #default="scope">
-            <span style="color: #e6a23c;">{{ currentTargetCoefficient.toFixed(4) }}</span>
+            <span style="color: #e6a23c;">{{ currentTargetCoefficient.toFixed(3) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="targetSales" label="目标销售额" width="110">
           <template #default="scope">
-            <span style="color: #409eff;">{{ formatCurrency(scope.row.targetSales) }}</span>
+            <span style="color: #000000;">{{ formatCurrency(scope.row.targetSales) }}万</span>
           </template>
         </el-table-column>
         <el-table-column prop="targetProfit" label="目标差价" width="100">
           <template #default="scope">
-            <span style="color: #409eff;">{{ formatCurrency(scope.row.targetProfit) }}</span>
+            <span style="color: #000000;">{{ formatCurrency(scope.row.targetProfit) }}万</span>
           </template>
         </el-table-column>
         <el-table-column prop="salesCompletionRate" label="销售额完成率" width="110" align="center">
@@ -204,6 +259,7 @@
 <script>
 import * as echarts from 'echarts'
 import { getSalesTarget, getSalesProfitReport } from '@/api/dataPlatform'
+import { getAssessmentTargets } from '@/api/enterprise/user'
 import { isAdmin, getCurrentUserName, getDataPermissions, getFirstDataPermissionName } from '@/utils/permission'
 
 export default {
@@ -225,6 +281,9 @@ export default {
       apiData: {
         chartData: []
       },
+      selectedMonth: new Date().getMonth() + 1,
+      selectedQuarter: Math.ceil((new Date().getMonth() + 1) / 3),
+      selectedYear: new Date().getFullYear(),
       summaryData: {
         totalSales: 0,
         lastYearSales: 0,
@@ -246,10 +305,20 @@ export default {
         targetProfit: 0,
         targetProfitDiff: 0,
         targetProfitRate: 0
-      }
+      },
+      staffList: [],
+      selectedStaffs: []
     }
   },
   computed: {
+    yearOptions() {
+      const currentYear = new Date().getFullYear()
+      const years = []
+      for (let y = currentYear; y >= 2018; y--) {
+        years.push(y)
+      }
+      return years
+    },
     getDimensionLabel() {
       const labels = {
         staff: '业务员',
@@ -301,8 +370,20 @@ export default {
         const targetProfit = coefficient * mbProfit
         const sales = item['含税销售额']
         const profit = item['不含税毛利差价']
-        const salesCompletionRate = targetSales > 0 ? (sales / targetSales) * 100 : 0
-        const profitCompletionRate = targetProfit > 0 ? (profit / targetProfit) * 100 : 0
+        let salesCompletionRate = 0
+        let profitCompletionRate = 0
+
+        if (this.timeDimension === 'cumulative') {
+          // 累计当前维度：当前销售额/年销售额目标，当年差价/年差价目标，差值基数用 currentTargetCoefficient
+          salesCompletionRate = mbSales > 0 ? (sales / mbSales) * 100 : 0
+          profitCompletionRate = mbProfit > 0 ? (profit / mbProfit) * 100 : 0
+        } else {
+          // 其他维度：当前销售额/目标销售额，当年差价/目标差价，差值基数用 1 (即100%)
+          salesCompletionRate = targetSales > 0 ? (sales / targetSales) * 100 : 0
+          profitCompletionRate = targetProfit > 0 ? (profit / targetProfit) * 100 : 0
+        }
+
+        const diffBase = this.timeDimension === 'cumulative' ? this.currentTargetCoefficient : 1
 
         return {
           ...item,
@@ -314,7 +395,9 @@ export default {
           sales,
           profit,
           salesCompletionRate,
-          profitCompletionRate
+          profitCompletionRate,
+          salesDiffBase: diffBase,
+          profitDiffBase: diffBase
         }
       })
 
@@ -364,22 +447,55 @@ export default {
         }
       }
 
-      const staffName = employeeName || currentUserName
+      if (permissionValue === 'ALL') {
+        try {
+          const res = await getAssessmentTargets()
+          const data = res.data || res
+          const targets = data.list || data.items || (Array.isArray(data) ? data : [])
+          employeeName = targets.map(item => item.realName || item.name || item.loginName).filter(n => n).join(',')
+        } catch (err) {
+          console.error('获取考核对象列表失败:', err)
+        }
+      }
+
+      let staffName = employeeName
+
+      if (this.selectedStaffs && this.selectedStaffs.length > 0) {
+        staffName = this.selectedStaffs.join(',')
+      } else if (!employeeName) {
+        staffName = currentUserName
+      }
+
+      this.staffList = employeeName ? employeeName.split(',').map(n => n.trim()).filter(n => n) : []
 
       const { startDate, endDate } = this.getDateRange()
 
-      const currentYear = new Date().getFullYear()
-      const lastYearStartDate = `${currentYear - 1}-${startDate.substring(5)}`
-      const lastYearEndDate = `${currentYear - 1}-${endDate.substring(5)}`
-      const twoYearsAgoStartDate = `${currentYear - 2}-${startDate.substring(5)}`
-      const twoYearsAgoEndDate = `${currentYear - 2}-${endDate.substring(5)}`
+      let currentYear = new Date().getFullYear()
+      let lastYearStartDate = ''
+      let lastYearEndDate = ''
+      let twoYearsAgoStartDate = ''
+      let twoYearsAgoEndDate = ''
+
+      if (this.timeDimension === 'year') {
+        const selectedYear = this.selectedYear
+        currentYear = selectedYear
+        lastYearStartDate = `${selectedYear - 1}-01-01`
+        lastYearEndDate = `${selectedYear - 1 + 1}-01-01`
+        twoYearsAgoStartDate = `${selectedYear - 2}-01-01`
+        twoYearsAgoEndDate = `${selectedYear - 2 + 1}-01-01`
+      } else {
+        lastYearStartDate = `${currentYear - 1}-${startDate.substring(5)}`
+        lastYearEndDate = `${currentYear - 1}-${endDate.substring(5)}`
+        twoYearsAgoStartDate = `${currentYear - 2}-${startDate.substring(5)}`
+        twoYearsAgoEndDate = `${currentYear - 2}-${endDate.substring(5)}`
+      }
 
       const currentParams = {
         startDate,
         endDate
       }
 
-      if (permissionValue !== 'ALL') {
+      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
         currentParams.staffName = staffName
       }
 
@@ -388,7 +504,7 @@ export default {
         endDate: lastYearEndDate
       }
 
-      if (permissionValue !== 'ALL') {
+      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
         lastYearParams.staffName = staffName
       }
 
@@ -397,7 +513,7 @@ export default {
         endDate: twoYearsAgoEndDate
       }
 
-      if (permissionValue !== 'ALL') {
+      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
         twoYearsAgoParams.staffName = staffName
       }
 
@@ -805,9 +921,21 @@ export default {
       this.fetchData()
     },
 
+    handleStaffChange() {
+      this.fetchData()
+    },
+    /**
+     * 计算当前时间维度的系数
+     */
     calculateCoefficient() {
       const today = new Date()
       const currentMonth = today.getMonth() + 1
+      const currentDay = today.getDate()
+
+      const selectedMonth = this.selectedMonth
+      const selectedQuarter = this.selectedQuarter
+      const selectedYear = this.selectedYear
+
       let quarterCoefficient = 0
 
       if (currentMonth >= 1 && currentMonth <= 3) {
@@ -826,23 +954,47 @@ export default {
       // 周系数: 季度系数/3/4
       const weekCoefficientFixed = quarterCoefficient / 3 / 4
 
-      // 累计当前系数: 1月1日到当前日期+1天 占全年的比例
-      const startOfYear = new Date(today.getFullYear(), 0, 1)
-      const endDate = new Date(today)
-      endDate.setDate(today.getDate() + 1)
-      const daysInYear = ((today.getFullYear() % 4 === 0 && today.getFullYear() % 100 !== 0) || today.getFullYear() % 400 === 0) ? 366 : 365
-      const cumulativeDays = Math.floor((endDate - startOfYear) / (1000 * 60 * 60 * 24))
-      const cumulativeCoefficient = cumulativeDays / daysInYear
+      // 累计当前系数: 第一季度17% + 第二季度按天计算(0.23/3/30*当前日)
+      let cumulativeCoefficient = 0
+      if (currentMonth >= 1 && currentMonth <= 3) {
+        // 第一季度，累计到当前日期
+        cumulativeCoefficient = 0.17 / 3 / 31 * currentDay
+      } else if (currentMonth >= 4 && currentMonth <= 6) {
+        // 第二季度，第一季度 + 第二季度按天计算
+        const q1Coefficient = 0.17
+        const q2DayCoefficient = 0.23 / 3 / 30 * currentDay
+        cumulativeCoefficient = q1Coefficient + q2DayCoefficient
+      } else if (currentMonth >= 7 && currentMonth <= 9) {
+        // 第三季度，前两个季度 + 第三季度按天计算
+        cumulativeCoefficient = 0.17 + 0.23 + (0.27 / 3 / 31 * currentDay)
+      } else {
+        // 第四季度，前三个季度 + 第四季度按天计算
+        cumulativeCoefficient = 0.17 + 0.23 + 0.27 + (0.33 / 3 / 30 * currentDay)
+      }
 
+      // 月系数：根据选择的月份计算
+      const getMonthCoefficientByMonth = (month) => {
+        const monthQuarter = Math.ceil(month / 3)
+        const quarterCoeffs = [0.17, 0.23, 0.27, 0.33]
+        const monthInQuarter = ((month - 1) % 3) + 1
+        return quarterCoeffs[monthQuarter - 1] / 3
+      }
+
+      // 季度系数：根据选择的季度计算
+      const getQuarterCoefficientByQuarter = (quarter) => {
+        const quarterCoeffs = [0.17, 0.23, 0.27, 0.33]
+        return quarterCoeffs[quarter - 1]
+      }
+      // 计算当前时间维度的系数
       switch (this.timeDimension) {
         case 'year':
           this.currentTargetCoefficient = 1
           break
         case 'quarter':
-          this.currentTargetCoefficient = quarterCoefficient
+          this.currentTargetCoefficient = getQuarterCoefficientByQuarter(selectedQuarter)
           break
         case 'month':
-          this.currentTargetCoefficient = monthCoefficient
+          this.currentTargetCoefficient = getMonthCoefficientByMonth(selectedMonth)
           break
         case 'week':
           this.currentTargetCoefficient = weekCoefficientFixed
@@ -858,13 +1010,15 @@ export default {
 
     getDateRange() {
       const today = new Date()
-      const year = today.getFullYear()
-      const month = today.getMonth() + 1
-      const date = today.getDate()
+      const currentYear = today.getFullYear()
+      const currentMonth = today.getMonth() + 1
+      const currentDay = today.getDate()
       const dayOfWeek = today.getDay()
 
       let startDate = ''
       let endDate = ''
+
+      const useYear = this.timeDimension === 'year' ? this.selectedYear : currentYear
 
       switch (this.timeDimension) {
         case 'week':
@@ -877,39 +1031,40 @@ export default {
           endDate = sunday.toISOString().split('T')[0]
           break
         case 'month':
-          startDate = `${year}-${String(month).padStart(2, '0')}-01`
-          const lastDayOfMonth = new Date(year, month, 0).getDate()
-          endDate = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`
+          const selectedMonth = this.selectedMonth
+          const nextMonth = selectedMonth + 1
+          startDate = `${useYear}-${String(selectedMonth).padStart(2, '0')}-01`
+          const lastDayOfMonth = new Date(useYear, selectedMonth, 0).getDate()
+          endDate = `${useYear}-${String(nextMonth).padStart(2, '0')}-01`
           break
         case 'quarter':
-          let quarterStartMonth = 0
-          if (month <= 3) quarterStartMonth = 1
-          else if (month <= 6) quarterStartMonth = 4
-          else if (month <= 9) quarterStartMonth = 7
-          else quarterStartMonth = 10
-          startDate = `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`
-          const quarterEndMonth = quarterStartMonth + 2
-          const lastDayOfQuarter = new Date(year, quarterEndMonth, 0).getDate()
-          endDate = `${year}-${String(quarterEndMonth).padStart(2, '0')}-${lastDayOfQuarter}`
+          const selectedQuarter = this.selectedQuarter
+          const quarterStartMonth = (selectedQuarter - 1) * 3 + 1
+          startDate = `${useYear}-${String(quarterStartMonth).padStart(2, '0')}-01`
+          const nextQuarterStartMonth = quarterStartMonth + 3
+          endDate = `${useYear}-${String(nextQuarterStartMonth).padStart(2, '0')}-01`
           break
         case 'year':
-          startDate = `${year}-01-01`
-          endDate = `${year}-12-31`
+          const selectedYear = this.selectedYear
+          startDate = `${selectedYear}-01-01`
+          endDate = `${selectedYear + 1}-01-01`
           break
         case 'cumulative':
-          startDate = `${year}-01-01`
+          startDate = `${currentYear}-01-01`
           const tomorrow = new Date(today)
           tomorrow.setDate(today.getDate() + 1)
           endDate = tomorrow.toISOString().split('T')[0]
           break
         default:
-          startDate = `${year}-01-01`
-          endDate = `${year}-12-31`
+          startDate = `${currentYear}-01-01`
+          endDate = `${currentYear + 1}-01-01`
       }
 
       return { startDate, endDate }
     },
-
+    /**
+     * 格式化数字，保留2位小数，超过10000时添加万
+     */
     formatNumber(value) {
       if (value === null || value === undefined || isNaN(value)) {
         return '-'
@@ -920,7 +1075,9 @@ export default {
       }
       return num.toFixed(2)
     },
-
+    /**
+     * 初始化图表
+     */
     initChart() {
       this.chartRef = this.$refs.chartRef
       if (!this.chartRef) return
@@ -935,7 +1092,9 @@ export default {
         }
       })
     },
-
+    /**
+     * 更新图表
+     */
     updateChart() {
       if (!this.chartInstance || !this.tableData || this.tableData.length === 0) return
 
@@ -946,23 +1105,22 @@ export default {
         year: '年',
         cumulative: '累计'
       }
-
       const currentTimeLabel = timeDimensionLabel[this.timeDimension] || '期'
-
       const data = this.tableData.slice(0, 10)
       const categories = data.map(item => item.category || '-')
       const salesData = data.map(item => (item.sales || 0) / 10000)
       const targetSalesData = data.map(item => (item.targetSales || 0) / 10000)
       const profitData = data.map(item => (item.profit || 0) / 10000)
       const targetProfitData = data.map(item => (item.targetProfit || 0) / 10000)
-
       const option = {
         tooltip: {
+          show: true,
           trigger: 'axis',
           axisPointer: {
             type: 'shadow'
           },
           formatter: (params) => {
+            if (!params || params.length === 0) return ''
             let result = `<div><strong>${params[0].name}</strong></div>`
             params.forEach(param => {
               result += `<div>${param.seriesName}: ${param.value.toFixed(2)} 万</div>`
@@ -985,12 +1143,18 @@ export default {
           data: categories,
           axisLabel: {
             rotate: 45,
-            interval: 0
+            interval: 0,
+            fontSize: 13,
+            fontWeight: 'bold'
           }
         },
         yAxis: {
           type: 'value',
           name: '金额 (万)',
+          nameTextStyle: {
+            fontSize: 12,
+            fontWeight: 'bold'
+          },
           axisLabel: {
             formatter: (value) => value.toFixed(0)
           }
@@ -1001,29 +1165,59 @@ export default {
             type: 'bar',
             data: salesData,
             itemStyle: { color: '#f56c6c' },
-            barWidth: '15%'
+            barWidth: '25%',
+            label: {
+              show: true,
+              position: 'center',
+              formatter: (params) => params.value.toFixed(1) + '万',
+              fontSize: 12,
+              fontWeight: 'bold',
+              offset: [0, -30]
+            }
           },
-          {
-            name: `${currentTimeLabel}目标销售额`,
-            type: 'bar',
-            data: targetSalesData,
-            itemStyle: { color: '#409eff' },
-            barWidth: '15%'
-          },
+          // {
+          //   name: `${currentTimeLabel}目标销售额`,
+          //   type: 'bar',
+          //   data: targetSalesData,
+          //   itemStyle: { color: '#409eff' },
+          //   barWidth: '15%',
+          //   label: {
+          //     show: true,
+          //     position: 'top',
+          //     formatter: (params) => params.value.toFixed(1) + '万',
+          //     fontSize: 10,
+          //     offset: [0, -15]
+          //   }
+          // },
           {
             name: `${currentTimeLabel}差价`,
             type: 'bar',
             data: profitData,
-            itemStyle: { color: '#009688' },
-            barWidth: '15%'
-          },
-          {
-            name: `${currentTimeLabel}目标差价`,
-            type: 'bar',
-            data: targetProfitData,
-            itemStyle: { color: '#e6a23c' },
-            barWidth: '15%'
+            itemStyle: { color: '#409eff' },
+            barWidth: '25%',
+            label: {
+              show: true,
+              position: 'bottom',
+              formatter: (params) => params.value.toFixed(1) + '万',
+              fontSize: 12,
+              fontWeight: 'bold',
+              offset: [0, -30]
+            }
           }
+          // {
+          //   name: `${currentTimeLabel}目标差价`,
+          //   type: 'bar',
+          //   data: targetProfitData,
+          //   itemStyle: { color: '#e6a23c' },
+          //   barWidth: '15%',
+          //   label: {
+          //     show: true,
+          //     position: 'top',
+          //     formatter: (params) => params.value.toFixed(1) + '万',
+          //     fontSize: 10,
+          //     offset: [0, -45]
+          //   }
+          // }
         ]
       }
 

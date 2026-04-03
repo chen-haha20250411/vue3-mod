@@ -62,6 +62,26 @@
             />
           </el-select>
         </div>
+        <div v-if="staffList.length > 0" class="filter-item">
+          <span class="filter-label">业务员：</span>
+          <el-select
+            v-model="selectedStaffs"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="全部业务员"
+            size="small"
+            style="width: 200px;"
+            @change="handleStaffChange"
+          >
+            <el-option
+              v-for="staff in staffList"
+              :key="staff"
+              :label="staff"
+              :value="staff"
+            />
+          </el-select>
+        </div>
       </div>
     </div>
 
@@ -215,6 +235,8 @@
 <script>
 import * as echarts from 'echarts'
 import { getCustomerSalesData } from '@/api/dataPlatform'
+import { isAdmin, getCurrentUserName, getDataPermissions, getFirstDataPermissionName, getDataPermissionValues } from '@/utils/permission'
+import { getAssessmentTargets } from '@/api/enterprise/user'
 
 export default {
   name: 'CustomerAnalysis',
@@ -224,6 +246,8 @@ export default {
       customerType: 'ORG',
       selectedIndustries: [],
       selectedRanges: [],
+      selectedStaffs: [],
+      staffList: [],
       listLoading: false,
       rawData: [],
       filteredData: [],
@@ -239,7 +263,9 @@ export default {
         totalProfit: 0,
         avgDealSize: 0,
         salesYoY: 0,
-        profitYoY: 0
+        profitYoY: 0,
+        currentTotalSales: 0,
+        currentTotalProfit: 0
       }
     }
   },
@@ -269,11 +295,16 @@ export default {
         const salesYoYRate = lastYearSales > 0 ? currentSales - lastYearSales : 0
         const profitYoYRate = lastYearProfit > 0 ? currentProfit - lastYearProfit : 0
 
+        // 根据customerType选择正确的客户名称字段
+        const orgName = this.customerType === 'ORG'
+          ? (item['组织'] || '')
+          : (item['客户'] || '')
+
         return {
           ...item,
-          orgName: item['组织'] || '',
+          orgName,
           industry: item['行业'] || '',
-          customerCount: item['客户数量'] || 0,
+          customerCount: this.customerType === 'ORG' ? (item['客户数量'] || 0) : 1,
           salesRange: item['销售额区间'] || '',
           currentSales,
           lastYearSales,
@@ -314,13 +345,13 @@ export default {
   methods: {
     getCurrentYearField(item, keyword) {
       const keys = Object.keys(item)
-      const field = keys.find(key => key.includes(keyword) && key.includes('当期'))
+      const field = keys.find(key => key.includes(keyword) && (key.includes('当期') || key.includes('当年')))
       return field
     },
 
     getLastYearField(item, keyword) {
       const keys = Object.keys(item)
-      const field = keys.find(key => key.includes(keyword) && key.includes('同期'))
+      const field = keys.find(key => key.includes(keyword) && (key.includes('同期') || key.includes('去年')))
       return field
     },
 
@@ -347,20 +378,71 @@ export default {
 
     async fetchData() {
       this.listLoading = true
+      const currentUserName = getCurrentUserName()
+      const admin = isAdmin()
+
+      const employeePermValues = getDataPermissionValues('EMPLOYEE')
+      let employeeName = ''
+      let permissionValue = ''
+
+      if (employeePermValues.includes('ALL')) {
+        try {
+          const res = await getAssessmentTargets()
+          const data = res.data || res
+          const targets = data.list || data.items || (Array.isArray(data) ? data : [])
+          employeeName = targets.map(item => item.realName || item.name || item.loginName).filter(n => n).join(',')
+        } catch (err) {
+          console.error('获取考核对象列表失败:', err)
+          employeeName = ''
+        }
+      } else {
+        const dataPermissions = getDataPermissions()
+        for (let i = 0; i < dataPermissions.length; i++) {
+          const dataPerm = dataPermissions[i]
+          if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
+            for (let j = 0; j < dataPerm.permissions.length; j++) {
+              const perm = dataPerm.permissions[j]
+              if (perm.permissionType && perm.permissionType.toLowerCase() === 'employee') {
+                employeeName = perm.permissionName || ''
+                permissionValue = perm.permissionValue || ''
+                break
+              }
+            }
+            if (employeeName) break
+          }
+          if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
+            employeeName = dataPerm.permissionName || ''
+            permissionValue = dataPerm.permissionValue || ''
+            break
+          }
+        }
+      }
+
+      let salesPerson = employeeName
+
+      if (this.selectedStaffs && this.selectedStaffs.length > 0) {
+        salesPerson = this.selectedStaffs.join(',')
+      }
 
       const [currentStart, currentEnd] = this.dateRange || []
 
       const params = {
         customerType: this.customerType,
+        reportType: this.customerType,
         startDate: currentStart,
-        endDate: currentEnd,
-        industry: '',
-        customerOrg: '',
-        permission: 'ALL'
+        endDate: currentEnd
       }
+
+      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
+        params.salesPerson = salesPerson
+      }
+
       try {
         const response = await getCustomerSalesData(params)
         this.rawData = this.extractDataArray(response)
+
+        this.staffList = employeeName ? employeeName.split(',').map(n => n.trim()).filter(n => n) : []
+
         this.applyFilters()
       } catch (error) {
         console.error('获取客户数据失败:', error)
@@ -421,6 +503,9 @@ export default {
     handleFilterChange() {
       this.applyFilters()
     },
+    handleStaffChange() {
+      this.fetchData()
+    },
 
     handleResize() {
       this.industryChart?.resize()
@@ -430,20 +515,29 @@ export default {
     },
 
     updateKPI() {
-      const totalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'current'), 0)
+      const currentTotalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'current'), 0)
       const lastYearTotalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'last'), 0)
-      const totalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'current'), 0)
+      const currentTotalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'current'), 0)
       const lastYearTotalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'last'), 0)
-      const totalCustomers = this.filteredData.reduce((sum, item) => sum + (item['客户数量'] || 0), 0)
-      const avgDealSize = totalCustomers > 0 ? totalSales / totalCustomers : 0
+
+      // 根据customerType计算客户数：
+      // - ORG: 累加item['客户数量']
+      // - CUSTOMER: 直接使用数据行数
+      const totalCustomers = this.customerType === 'ORG'
+        ? this.filteredData.reduce((sum, item) => sum + (item['客户数量'] || 0), 0)
+        : this.filteredData.length
+
+      const avgDealSize = lastYearTotalSales > 0 && totalCustomers > 0 ? lastYearTotalSales / totalCustomers : 0
 
       this.kpiData = {
-        totalSales,
+        totalSales: lastYearTotalSales,
         totalCustomers,
-        totalProfit,
+        totalProfit: lastYearTotalProfit,
         avgDealSize,
-        salesYoY: lastYearTotalSales > 0 ? ((totalSales - lastYearTotalSales) / lastYearTotalSales) * 100 : 0,
-        profitYoY: lastYearTotalProfit > 0 ? ((totalProfit - lastYearTotalProfit) / lastYearTotalProfit) * 100 : 0
+        currentTotalSales,
+        currentTotalProfit,
+        salesYoY: lastYearTotalSales > 0 ? ((currentTotalSales - lastYearTotalSales) / lastYearTotalSales) * 100 : 0,
+        profitYoY: lastYearTotalProfit > 0 ? ((currentTotalProfit - lastYearTotalProfit) / lastYearTotalProfit) * 100 : 0
       }
     },
 
@@ -751,9 +845,12 @@ export default {
         return
       }
 
+      // 根据customerType选择正确的客户名称字段
+      const nameField = this.customerType === 'ORG' ? '组织' : '客户'
+
       const sortedData = [...this.filteredData]
         .map(item => ({
-          name: item['组织'] || '',
+          name: item[nameField] || '',
           value: this.getFieldValue(item, '销售额', 'current')
         }))
         .sort((a, b) => b.value - a.value)
@@ -777,7 +874,13 @@ export default {
         },
         xAxis: {
           type: 'value',
-          name: '销售额(万)'
+          name: '销售额(万)',
+          axisLabel: {
+            formatter: (value) => {
+              return Math.round(value / 10000)
+            }
+          },
+          splitNumber: 5
         },
         yAxis: {
           type: 'category',
@@ -798,7 +901,8 @@ export default {
             show: true,
             position: 'right',
             formatter: (params) => `${this.formatWan(params.value)}万`
-          }
+          },
+          barWidth: '60%'
         }]
       }
 
@@ -806,7 +910,7 @@ export default {
     },
 
     handleExport() {
-      const headers = ['客户组织', '行业', '客户数量', '销售额区间', '当期销售额(万)', '同期销售额(万)', '销售额同比', '当期差价(万)', '同期差价(万)', '差价同比']
+      const headers = [this.customerType === 'ORG' ? '客户组织' : '客户名称', '行业', '客户数量', '销售额区间', '当期销售额(万)', '同期销售额(万)', '销售额同比', '当期差价(万)', '同期差价(万)', '差价同比']
       const rows = this.tableData.map(item => [
         item.orgName,
         item.industry,

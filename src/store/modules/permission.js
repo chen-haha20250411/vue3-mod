@@ -201,6 +201,17 @@ function buildChildRoute(menu, parentPath) {
 export function generateRoutesFromMenus(menus) {
   if (!menus || !Array.isArray(menus)) return []
 
+  // 调试：打印菜单数据，查看中标信息和投标信息的menuURL
+  console.log('Menu data:', menus)
+  const zhongbiaoMenu = menus.find(menu => menu.menuName === '中标信息' || menu.menu_name === '中标信息')
+  if (zhongbiaoMenu) {
+    console.log('Zhongbiao menu:', zhongbiaoMenu)
+  }
+  const biddingMenu = menus.find(menu => menu.menuName === '投标信息' || menu.menu_name === '投标信息' || menu.menuName === '招标信息' || menu.menu_name === '招标信息')
+  if (biddingMenu) {
+    console.log('Bidding menu:', biddingMenu)
+  }
+
   const routes = []
 
   menus.forEach(menu => {
@@ -232,44 +243,6 @@ const actions = {
 
       if (menus && menus.length > 0) {
         accessedRoutes = generateRoutesFromMenus(menus)
-
-        // 去重：移除与静态路由重复的菜单
-        const staticRouteTitles = constantRoutes
-          .filter(route => !route.hidden && route.meta && route.meta.title)
-          .map(route => route.meta.title)
-
-        // 同时检查子菜单的标题
-        constantRoutes.forEach(route => {
-          if (route.children && route.children.length > 0) {
-            route.children.forEach(childRoute => {
-              if (!childRoute.hidden && childRoute.meta && childRoute.meta.title) {
-                staticRouteTitles.push(childRoute.meta.title)
-              }
-            })
-          }
-        })
-
-        // 移除与静态路由标题重复的菜单项
-        accessedRoutes = accessedRoutes.filter(route => {
-          // 检查当前路由标题
-          if (route.meta && route.meta.title && staticRouteTitles.includes(route.meta.title)) {
-            return false
-          }
-
-          // 检查子路由标题
-          if (route.children && route.children.length > 0) {
-            route.children = route.children.filter(childRoute => {
-              return !(childRoute.meta && childRoute.meta.title && staticRouteTitles.includes(childRoute.meta.title))
-            })
-
-            // 如果父路由没有子路由了，也移除父路由
-            if (route.children.length === 0) {
-              return false
-            }
-          }
-
-          return true
-        })
       } else {
         accessedRoutes = []
       }

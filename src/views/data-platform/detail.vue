@@ -268,7 +268,20 @@ export default {
   },
   computed: {
     salespersonName() {
-      return decodeURIComponent(this.salesperson) || '未知业务员'
+      switch (this.summaryDimension) {
+        case 'staff':
+          return decodeURIComponent(this.staffName) || decodeURIComponent(this.salesperson) || '未知业务员'
+        case 'parentDept':
+          return decodeURIComponent(this.parentDepartment) || '未知父级部门'
+        case 'department':
+          return decodeURIComponent(this.department) || '未知部门'
+        case 'business':
+          return decodeURIComponent(this.businessLine) || '未知业务线'
+        case 'branch':
+          return decodeURIComponent(this.branch) || '未知分支机构'
+        default:
+          return decodeURIComponent(this.salesperson) || '未知业务员'
+      }
     },
     salesCompletionRate() {
       if (this.targets.yearSales === 0) return 0
@@ -417,8 +430,6 @@ export default {
         const params = this.buildQueryParams(yearStartDate, yearEndDate, '', currentUserRealName, admin)
         const response = await getSalesProfitReport(params)
 
-        console.log('Target data response:', response)
-
         if (response && response.data) {
           const dataArray = Array.isArray(response.data) ? response.data : (response.data.data || [])
 
@@ -431,9 +442,6 @@ export default {
             totalMB_profit += parseFloat(item.MB_profit) || parseFloat(item['MB_profit']) || 0
             totalMB_sales_zz += parseFloat(item.MB_sales_zz) || parseFloat(item['MB_sales_zz']) || 0
           })
-
-          console.log('Target values:', { totalMB_sales, totalMB_profit, totalMB_sales_zz })
-
           this.targets = {
             yearSales: totalMB_sales,
             yearProfit: totalMB_profit,
@@ -545,7 +553,6 @@ export default {
 
         if (requests.length > 0) {
           const results = await Promise.allSettled(requests)
-
           results.forEach((result, index) => {
             if (result.status === 'fulfilled') {
               const response = result.value
@@ -563,7 +570,6 @@ export default {
 
         this.processAndMergeData(cachedResponses, yearRanges)
       } catch (error) {
-        console.error('Failed to load detail data:', error)
         this.error = '数据加载失败，请稍后重试'
       } finally {
         this.loading = false
@@ -596,24 +602,15 @@ export default {
         }))
 
         const lastYearData = yearlyData[0]
-        console.log('lastYearData (most recent year):', lastYearData)
-        console.log('cachedResponses length:', cachedResponses.length)
-        console.log('cachedResponses first (most recent):', cachedResponses[0])
         if (lastYearData && cachedResponses[0]) {
           const lastYearResponse = cachedResponses[0]
-          console.log('lastYearResponse (most recent):', lastYearResponse)
-
           let dataArray = null
           if (Array.isArray(lastYearResponse)) {
             dataArray = lastYearResponse
           } else if (lastYearResponse && lastYearResponse.data) {
             dataArray = lastYearResponse.data
           }
-
-          console.log('dataArray:', dataArray)
-
           if (dataArray && Array.isArray(dataArray)) {
-            console.log('dataArray is array, length:', dataArray.length)
             let totalMB_sales = 0
             let totalMB_profit = 0
             let totalMB_sales_zz = 0
@@ -623,9 +620,6 @@ export default {
               totalMB_profit += parseFloat(item.MB_profit) || parseFloat(item['MB_profit']) || 0
               totalMB_sales_zz += parseFloat(item.MB_sales_zz) || parseFloat(item['MB_sales_zz']) || 0
             })
-
-            console.log('Target values from most recent year:', { totalMB_sales, totalMB_profit, totalMB_sales_zz })
-
             this.targets = {
               yearSales: totalMB_sales,
               yearProfit: totalMB_profit,
@@ -980,7 +974,6 @@ export default {
 
     async loadValueAddedBusinessData() {
       try {
-        console.log('loadValueAddedBusinessData called')
         const currentUserName = getCurrentUserName()
         const currentYear = new Date().getFullYear()
         let startDate, endDate
@@ -1036,22 +1029,14 @@ export default {
             params.sGroupList = targetValue
             break
         }
-
-        console.log('Value Added Business params:', params)
-
         const cacheKey = `value_added_${this.summaryDimension}_${this.selectedYear}_${targetValue}_${currentUserName}`
         const cachedData = this.getCacheData(cacheKey)
 
         if (cachedData) {
-          console.log('Using cached value added data:', cachedData)
           this.currentData.valueAdded = cachedData
           return
         }
-
-        console.log('Calling getValueAddedBusiness API...')
         const response = await getValueAddedBusinessNew(params)
-        console.log('Value Added Business response:', response)
-
         if (response && Array.isArray(response)) {
           let totalValueAdded = 0
           response.forEach(item => {
@@ -1173,7 +1158,6 @@ export default {
           this.staffDetailData = rawData
         }
       } catch (error) {
-        console.error('Failed to load staff detail data:', error)
         this.staffDetailData = []
       }
     },
@@ -1206,6 +1190,35 @@ export default {
         businessLine: this.businessLine || '',
         branch: this.branch || '',
         staffName: this.staffName || ''
+      }
+
+      if (!admin && !params.staffName) {
+        const dataPermissions = getDataPermissions()
+        let employeeRealName = ''
+        for (let i = 0; i < dataPermissions.length; i++) {
+          const dataPerm = dataPermissions[i]
+
+          if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
+            for (let j = 0; j < dataPerm.permissions.length; j++) {
+              const perm = dataPerm.permissions[j]
+              if (perm.permissionType && perm.permissionType.toLowerCase() === 'employee') {
+                employeeRealName = perm.permissionName || ''
+                break
+              }
+            }
+            if (employeeRealName) break
+          }
+
+          if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
+            employeeRealName = dataPerm.permissionName || ''
+            break
+          }
+        }
+
+        const currentUserRealName = employeeRealName || currentUserName
+        if (currentUserRealName) {
+          params.staffName = currentUserRealName
+        }
       }
 
       return params

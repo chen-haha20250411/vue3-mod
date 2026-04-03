@@ -64,7 +64,7 @@ export function resetPassword(operatorId) {
 
 export function updatePassword(data) {
   return request({
-    url: '/admin/oper/updatePwd',
+    url: '/admin/oper/chpwd',
     method: 'post',
     data: data
   })
@@ -106,6 +106,13 @@ export function getDeptList() {
 export function getBranchList() {
   return request({
     url: '/api/branchInfo/list',
+    method: 'get'
+  })
+}
+
+export function getAssessmentTargets() {
+  return request({
+    url: '/admin/oper/getAssessmentTargets',
     method: 'get'
   })
 }

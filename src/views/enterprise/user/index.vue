@@ -14,7 +14,7 @@
     </div>
 
     <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;margin-top: 20px;">
-      <el-table-column label="ID" prop="operatorId" align="center" width="80">
+      <el-table-column label="ID" prop="operatorId" align="center" width="60">
         <template #default="scope">
           <span>{{ scope.row.operatorId }}</span>
         </template>
@@ -36,7 +36,7 @@
           <span>{{ scope.row.deptName }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="分支机构" width="150px" align="center">
+      <el-table-column label="分支机构" width="120px" align="center">
         <template #default="scope">
           <span>{{ getBranchName(scope.row) || '-' }}</span>
         </template>
@@ -54,7 +54,13 @@
           <span v-if="getDisplayDataRoles(scope.row).length === 0">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="400px" align="center" fixed="right">
+      <el-table-column label="考核对象" width="100px" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.isAssessmentTarget" type="success">是</el-tag>
+          <el-tag v-else type="info">否</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="500px" align="center" fixed="right">
         <template #default="scope">
           <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">
             编辑
@@ -103,6 +109,10 @@
             <span v-if="getDisplayDataRoles(currentUser).length === 0">-</span>
           </div>
         </el-form-item>
+        <el-form-item label="考核对象">
+          <el-tag v-if="currentUser.isAssessmentTarget" type="success">是</el-tag>
+          <el-tag v-else type="info">否</el-tag>
+        </el-form-item>
       </el-form>
     </el-dialog>
 
@@ -138,6 +148,9 @@
           <el-select v-model="temp.roleinfoId" class="filter-item" style="width: 100%;">
             <el-option v-for="item in roleList" :key="item.roleInfoId" :label="item.roleName" :value="item.roleInfoId" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="考核对象" prop="isAssessmentTarget">
+          <el-switch v-model="temp.isAssessmentTarget" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -204,7 +217,7 @@
 </template>
 
 <script>
-import { getUsers, createUser, updateUser, deleteUser, getUserDetail, getRoles, grantUserRoles, resetPassword, getDeptList, getBranchList, grantUserDataRoles } from '@/api/enterprise/user'
+import { getUsers, createUser, updateUser, deleteUser, getUserDetail, getRoles, grantUserRoles, resetPassword, getDeptList, getBranchList, grantUserDataRoles, getAssessmentTargets } from '@/api/enterprise/user'
 import { getDataRoleList, getUserDataPermissions } from '@/api/data-permission'
 import Pagination from '@/components/Pagination'
 
@@ -237,7 +250,8 @@ export default {
         deptId: undefined,
         branchId: undefined,
         roleInfoId: undefined,
-        dataRoles: []
+        dataRoles: [],
+        isAssessmentTarget: false
       },
       currentUser: {},
       dialogDetailVisible: false,
@@ -359,7 +373,8 @@ export default {
         deptId: row.deptId || row.department?.id,
         branchId: row.branchId || row.branch?.id,
         roleinfoId: row.roleinfoId,
-        dataRoles: row.dataRoles || []
+        dataRoles: row.dataRoles || [],
+        isAssessmentTarget: row.isAssessmentTarget || false
       }
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
@@ -495,7 +510,8 @@ export default {
         deptId: undefined,
         branchId: undefined,
         roleInfoId: undefined,
-        dataRoles: []
+        dataRoles: [],
+        isAssessmentTarget: false
       }
     },
     getRoleId(role) {
@@ -536,10 +552,10 @@ export default {
 
     getBranchName(row) {
       if (!row) return ''
-      if (typeof row.branch === 'object' && row.branch.branchName) {
+      if (row.branch && typeof row.branch === 'object' && row.branch.branchName) {
         return row.branch.branchName
       }
-      return row.branchName || row.branch || ''
+      return row.branchName || (row.branch ? row.branch : '')
     },
     handleDetail(row) {
       getUserDetail(row.operatorId).then(res => {

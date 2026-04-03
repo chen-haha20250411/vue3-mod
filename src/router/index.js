@@ -73,6 +73,7 @@ export const constantRoutes = [
     path: '/dashboard',
     component: Layout,
     redirect: '/dashboard/index',
+    hidden: true,
     meta: { title: '仪表盘', icon: 'dashboard' },
     children: [
       {
@@ -101,6 +102,7 @@ export const constantRoutes = [
     path: '/data-platform',
     component: Layout,
     redirect: '/data-platform',
+    hidden: true,
     meta: { title: '数据中台', icon: 'database' },
     children: [
       {
@@ -120,7 +122,8 @@ export const constantRoutes = [
         path: 'customer',
         component: () => import('@/views/data-platform/components/CustomerAnalysis'),
         name: 'CustomerAnalysis',
-        meta: { title: '客户行业看板', icon: 'pie' }
+        meta: { title: '客户行业看板', icon: 'pie' },
+        hidden: true
       }
     ]
   },
@@ -128,6 +131,7 @@ export const constantRoutes = [
     path: '/system/data-permission',
     component: Layout,
     redirect: '/system/data-permission/index',
+    hidden: true,
     meta: { title: '数据权限管理', icon: 'lock' },
     children: [
       {
@@ -138,7 +142,7 @@ export const constantRoutes = [
       }
     ]
   },
-  systemRouter
+  { ...systemRouter, hidden: true }
 ]
 
 /**

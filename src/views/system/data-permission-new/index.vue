@@ -102,7 +102,6 @@
 import {
   getAllDataRoles,
   getDataPermissionList,
-  getAllUsers,
   getAllBranches,
   getAllDepartments,
   getAllCustomers,
@@ -114,6 +113,7 @@ import {
   updatePermission,
   getPermissionTypes
 } from '@/api/data-permission-new'
+import { getAssessmentTargets } from '@/api/enterprise/user'
 import PermissionPanel from './components/PermissionPanel'
 
 export default {
@@ -167,13 +167,8 @@ export default {
     // 加载权限类型
     async loadPermissionTypes() {
       try {
-        console.log('开始加载权限类型...')
         const response = await getPermissionTypes()
-        console.log('权限类型接口返回:', response)
-
         const data = response.data || response
-        console.log('解析后的数据:', data)
-
         let types = []
         if (Array.isArray(data)) {
           types = data
@@ -281,7 +276,10 @@ export default {
     // 加载所有主数据
     async loadAllMasterData() {
       const loadData = async(apiFunc, dataKey, loadingKey, mapper) => {
-        if (!apiFunc) return
+        if (!apiFunc) {
+          console.log(`跳过加载，没有API函数: ${dataKey}`)
+          return
+        }
 
         this.loading[loadingKey] = true
         try {
@@ -302,21 +300,36 @@ export default {
       // 建立权限类型code到API函数的映射
       const apiMapper = {
         'branch': getAllBranches,
+        'BRANCH': getAllBranches,
         'department': getAllDepartments,
-        'employee': getAllUsers,
+        'DEPARTMENT': getAllDepartments,
+        'employee': getAssessmentTargets,
+        'EMPLOYEE': getAssessmentTargets,
         'customer': getAllCustomers,
+        'CUSTOMER': getAllCustomers,
         'industry': getAllIndustries,
+        'INDUSTRY': getAllIndustries,
         'productType': getAllProductTypes,
+        'PRODUCT_TYPE': getAllProductTypes,
         'productLine': getAllProductLines,
-        'warehouse': getAllWarehouses
+        'PRODUCT_LINE': getAllProductLines,
+        'warehouse': getAllWarehouses,
+        'WAREHOUSE': getAllWarehouses
       }
 
-      // 为员工数据添加mapper，将userId映射为id
+      // 为员工数据添加mapper，处理各种可能的数据结构
       const mapper = (type, item) => {
-        if (type === 'employee') {
+        if (type && type.toLowerCase() === 'employee') {
+          // 处理各种可能的ID字段
+          const id = item.id || item.userId || item.operatorId || item.user_id || item.operator_id
+
+          // 处理各种可能的名称字段
+          const name = item.name || item.userName || item.realName || item.loginName || item.username || item.user_name
+
           return {
             ...item,
-            id: item.id || item.userId
+            id: id,
+            name: name
           }
         }
         return item
@@ -324,6 +337,7 @@ export default {
 
       // 根据权限类型动态加载对应的数据
       const loadPromises = []
+
       this.permissionTypes.forEach(type => {
         const apiFunc = apiMapper[type.code.toLowerCase()]
         if (apiFunc) {
@@ -416,11 +430,21 @@ export default {
         grouped[type] = []
       })
 
-      permissions.forEach(permission => {
-        const scopeType = this.normalizeScopeType(permission.scopeType || permission.type || permission.permissionType)
+      console.log('groupPermissionsByType - 初始化的grouped:', grouped)
+
+      permissions.forEach((permission, index) => {
+        console.log(`处理权限 ${index}:`, permission)
+        const rawScopeType = permission.scopeType || permission.type || permission.permissionType
+        console.log(`权限 ${index} 的原始scopeType:`, rawScopeType)
+
+        const scopeType = this.normalizeScopeType(rawScopeType)
+        console.log(`权限 ${index} 的标准化scopeType:`, scopeType)
+
         if (grouped[scopeType]) {
           const processedPermission = this.processPermissionItem(permission)
           grouped[scopeType].push(processedPermission)
+        } else {
+          console.log(`权限 ${index} 没有找到对应的group: ${scopeType}`)
         }
       })
 
