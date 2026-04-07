@@ -90,34 +90,64 @@
         <div class="kpi-content">
           <div class="kpi-label">总销售额</div>
           <div class="kpi-value">{{ formatCurrency(kpiData.totalSales) }}万</div>
-          <div class="kpi-change" :class="kpiData.salesYoY >= 0 ? 'positive' : 'negative'">
-            <span class="arrow">{{ kpiData.salesYoY >= 0 ? '↑' : '↓' }}</span>
-            {{ Math.abs(kpiData.salesYoY).toFixed(1) }}%
-            <span class="period">同比</span>
+          <div class="kpi-details">
+            <div class="detail-row">
+              <span class="detail-label">去年同期：</span>
+              <span class="detail-value">{{ formatCurrency(kpiData.lastYearTotalSales) }}万</span>
+            </div>
+            <div class="detail-row" :class="kpiData.salesDiff >= 0 ? 'positive' : 'negative'">
+              <span class="detail-label">差值：</span>
+              <span class="detail-value">
+                {{ kpiData.salesDiff >= 0 ? '+' : '' }}{{ formatCurrency(kpiData.salesDiff) }}万
+              </span>
+            </div>
+            <div class="detail-row" :class="kpiData.salesYoY >= 0 ? 'positive' : 'negative'">
+              <span class="detail-label">同比：</span>
+              <span class="detail-value">
+                {{ Math.abs(kpiData.salesYoY).toFixed(1) }}% {{ kpiData.salesYoY >= 0 ? '↑' : '↓' }}
+              </span>
+            </div>
           </div>
-        </div>
-      </el-card>
-      <el-card class="kpi-card">
-        <div class="kpi-content">
-          <div class="kpi-label">{{ customerType === 'ORG' ? '客户组织数' : '客户总数' }}</div>
-          <div class="kpi-value">{{ kpiData.totalCustomers }}</div>
         </div>
       </el-card>
       <el-card class="kpi-card">
         <div class="kpi-content">
           <div class="kpi-label">总差价</div>
-          <div class="kpi-value">{{ formatCurrency(kpiData.totalProfit) }}万</div>
-          <div class="kpi-change" :class="kpiData.profitYoY >= 0 ? 'positive' : 'negative'">
-            <span class="arrow">{{ kpiData.profitYoY >= 0 ? '↑' : '↓' }}</span>
-            {{ Math.abs(kpiData.profitYoY).toFixed(1) }}%
-            <span class="period">同比</span>
+          <div class="kpi-value profit-value">{{ formatCurrency(kpiData.totalProfit) }}万</div>
+          <div class="kpi-details">
+            <div class="detail-row">
+              <span class="detail-label">去年同期：</span>
+              <span class="detail-value">{{ formatCurrency(kpiData.lastYearTotalProfit) }}万</span>
+            </div>
+            <div class="detail-row" :class="kpiData.profitDiff >= 0 ? 'positive' : 'negative'">
+              <span class="detail-label">差值：</span>
+              <span class="detail-value">
+                {{ kpiData.profitDiff >= 0 ? '+' : '' }}{{ formatCurrency(kpiData.profitDiff) }}万
+              </span>
+            </div>
+            <div class="detail-row" :class="kpiData.profitYoY >= 0 ? 'positive' : 'negative'">
+              <span class="detail-label">同比：</span>
+              <span class="detail-value">
+                {{ Math.abs(kpiData.profitYoY).toFixed(1) }}% {{ kpiData.profitYoY >= 0 ? '↑' : '↓' }}
+              </span>
+            </div>
           </div>
         </div>
       </el-card>
       <el-card class="kpi-card">
         <div class="kpi-content">
-          <div class="kpi-label">平均{{ customerType === 'ORG' ? '组织' : '客' }}单价</div>
-          <div class="kpi-value">{{ formatCurrency(kpiData.avgDealSize) }}万</div>
+          <div class="kpi-label">客户统计</div>
+          <div class="kpi-value customer-value">{{ customerType === 'ORG' ? kpiData.totalCustomers : kpiData.totalCustomers }}</div>
+          <div class="kpi-details">
+            <div class="detail-row">
+              <span class="detail-label">{{ customerType === 'ORG' ? '客户组织数：' : '客户总数：' }}</span>
+              <span class="detail-value">{{ kpiData.totalCustomers }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ customerType === 'ORG' ? '平均组织单价：' : '平均客单价：' }}</span>
+              <span class="detail-value">{{ formatCurrency(kpiData.avgDealSize) }}万</span>
+            </div>
+          </div>
         </div>
       </el-card>
     </div>
@@ -345,13 +375,13 @@ export default {
   methods: {
     getCurrentYearField(item, keyword) {
       const keys = Object.keys(item)
-      const field = keys.find(key => key.includes(keyword) && (key.includes('当期') || key.includes('当年')))
+      const field = keys.find(key => key.includes(keyword) && key.includes('当期'))
       return field
     },
 
     getLastYearField(item, keyword) {
       const keys = Object.keys(item)
-      const field = keys.find(key => key.includes(keyword) && (key.includes('同期') || key.includes('去年')))
+      const field = keys.find(key => key.includes(keyword) && key.includes('同期'))
       return field
     },
 
@@ -418,7 +448,7 @@ export default {
         }
       }
 
-      let salesPerson = employeeName
+      let salesPerson = 'ALL'
 
       if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         salesPerson = this.selectedStaffs.join(',')
@@ -430,11 +460,8 @@ export default {
         customerType: this.customerType,
         reportType: this.customerType,
         startDate: currentStart,
-        endDate: currentEnd
-      }
-
-      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
-        params.salesPerson = salesPerson
+        endDate: currentEnd,
+        salesPerson: salesPerson
       }
 
       try {
@@ -470,7 +497,7 @@ export default {
 
       filtered = filtered.filter(item => {
         const industry = item['行业'] || ''
-        return industry !== '个人'
+        return industry !== '个人1'
       })
 
       if (this.selectedIndustries.length > 0) {
@@ -513,7 +540,7 @@ export default {
       this.heatmapChart?.resize()
       this.rankChart?.resize()
     },
-
+    // 加载销售额、差价页签数据
     updateKPI() {
       const currentTotalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'current'), 0)
       const lastYearTotalSales = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'last'), 0)
@@ -527,15 +554,19 @@ export default {
         ? this.filteredData.reduce((sum, item) => sum + (item['客户数量'] || 0), 0)
         : this.filteredData.length
 
-      const avgDealSize = lastYearTotalSales > 0 && totalCustomers > 0 ? lastYearTotalSales / totalCustomers : 0
+      const avgDealSize = currentTotalSales > 0 && totalCustomers > 0 ? currentTotalSales / totalCustomers : 0
 
       this.kpiData = {
-        totalSales: lastYearTotalSales,
+        totalSales: currentTotalSales,
         totalCustomers,
-        totalProfit: lastYearTotalProfit,
+        totalProfit: currentTotalProfit,
         avgDealSize,
         currentTotalSales,
         currentTotalProfit,
+        lastYearTotalSales,
+        lastYearTotalProfit,
+        salesDiff: currentTotalSales - lastYearTotalSales,
+        profitDiff: currentTotalProfit - lastYearTotalProfit,
         salesYoY: lastYearTotalSales > 0 ? ((currentTotalSales - lastYearTotalSales) / lastYearTotalSales) * 100 : 0,
         profitYoY: lastYearTotalProfit > 0 ? ((currentTotalProfit - lastYearTotalProfit) / lastYearTotalProfit) * 100 : 0
       }
@@ -1011,18 +1042,61 @@ export default {
   font-weight: bold;
   color: #303133;
   margin-bottom: 8px;
+
+  &.profit-value {
+    color: #009688;
+  }
+
+  &.customer-value {
+    color: #409eff;
+  }
+}
+
+.kpi-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+
+  .detail-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0;
+    font-size: 13px;
+
+    .detail-label {
+      color: #909399;
+    }
+
+    .detail-value {
+      font-weight: 600;
+    }
+
+    &.positive {
+      .detail-value {
+        color: #f56c6c;
+      }
+    }
+
+    &.negative {
+      .detail-value {
+        color: #67c23a;
+      }
+    }
+  }
 }
 
 .kpi-change {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 
   &.positive {
-    color: #67c23a;
+    color: #f56c6c;
   }
 
   &.negative {
-    color: #f56c6c;
+    color: #67c23a;
   }
 
   .arrow {
