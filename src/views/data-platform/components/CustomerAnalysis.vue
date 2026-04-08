@@ -450,6 +450,10 @@ export default {
 
       let salesPerson = 'ALL'
 
+      if (!admin) {
+        salesPerson = employeeName || currentUserName
+      }
+
       if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         salesPerson = this.selectedStaffs.join(',')
       }

@@ -18,6 +18,16 @@ const zhongbiaoRouter = {
         title: '中标列表',
         icon: 'list'
       }
+    },
+    {
+      path: 'detail',
+      component: () => import('@/views/zhongbiao/detail'),
+      name: 'ZhongbiaoDetail',
+      meta: {
+        title: '中标详情',
+        icon: 'detail',
+        hidden: true
+      }
     }
   ]
 }

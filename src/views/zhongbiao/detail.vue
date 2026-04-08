@@ -19,7 +19,7 @@
             <el-descriptions-item label="中标金额">{{ detailData.winnerAmount ? '¥' + detailData.winnerAmount : '-' }}</el-descriptions-item>
             <el-descriptions-item label="备注">{{ detailData.remark || '-' }}</el-descriptions-item>
             <el-descriptions-item label="原文链接">
-              <a v-if="detailData.htmlUrl" :href="detailData.htmlUrl" target="_blank" style="color: #409EFF;">查看原文</a>
+              <a v-if="detailData.html_url" :href="detailData.html_url" target="_blank" style="color: #409EFF;">查看原文</a>
               <span v-else>-</span>
             </el-descriptions-item>
           </el-descriptions>
@@ -28,7 +28,16 @@
             <template #header>
               <span>详细内容</span>
             </template>
-            <div class="content-html" v-html="detailData.html_content || '<p>暂无内容</p>'" />
+            <div v-if="detailData.html_content" class="content-html" v-html="detailData.html_content" />
+            <div v-else-if="detailData.html_url" class="external-link">
+              <p>详细内容为空，请查看原文链接</p>
+              <el-button type="primary" :href="detailData.html_url" target="_blank">
+                查看原文
+              </el-button>
+            </div>
+            <div v-else class="no-content">
+              <p>暂无内容</p>
+            </div>
           </el-card>
         </div>
         <div v-else class="no-data">
@@ -61,22 +70,41 @@ export default {
     async fetchDetail() {
       this.loading = true
       try {
-        const query = this.$route.query
-        this.detailData = {
-          id: this.id,
-          projectNo: query.projectNo || '',
-          title: query.title || '',
-          publishDate: query.publishDate || '',
-          customer: query.customer || '',
-          noticeType: query.noticeType || '',
-          winnerPrincipal: query.winnerPrincipal || '',
-          winnerAmount: query.winnerAmount || '',
-          remark: query.remark || '',
-          htmlUrl: query.htmlUrl || '',
-          html_content: ''
+        const id = this.$route.query.id
+        if (id) {
+          const response = await api.getInfo(id)
+          if (response.data) {
+            this.detailData = response.data
+          } else if (response) {
+            this.detailData = response
+          } else {
+            this.detailData = {
+              id: id,
+              html_content: '<p>暂无内容</p>'
+            }
+          }
+        } else {
+          const query = this.$route.query
+          this.detailData = {
+            id: this.id,
+            projectNo: query.projectNo || '',
+            title: query.title || '',
+            publishDate: query.publishDate || '',
+            customer: query.customer || '',
+            noticeType: query.noticeType || '',
+            winnerPrincipal: query.winnerPrincipal || '',
+            winnerAmount: query.winnerAmount || '',
+            remark: query.remark || '',
+            htmlUrl: query.htmlUrl || '',
+            html_content: query.html_content || ''
+          }
         }
       } catch (e) {
         console.error('Fetch detail error:', e)
+        this.detailData = {
+          id: this.id,
+          html_content: '<p>加载失败</p>'
+        }
       }
       this.loading = false
     }
@@ -107,5 +135,21 @@ export default {
 .no-data {
   text-align: center;
   padding: 40px 0;
+}
+
+.external-link {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.external-link p {
+  margin-bottom: 20px;
+  color: #606266;
+}
+
+.no-content {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
 }
 </style>

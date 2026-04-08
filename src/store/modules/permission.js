@@ -31,194 +31,110 @@ function buildRoute(menu) {
   const validChildren = hasChildren ? childMenuList.filter(sub => {
     const subUrl = sub.menuURL || sub.menuUrl
     if (subUrl && subUrl !== '#') return true
-    // 保留有子菜单的目录节点
     if (sub.subMenuList && sub.subMenuList.length > 0) return true
     return false
   }) : []
 
   if (menuUrl === '#' || !menuUrl) {
-    if (validChildren.length > 0) {
-      const firstChild = validChildren[0]
-      const firstChildUrl = firstChild.menuURL || firstChild.menuUrl || ''
-      const firstChildFullPath = firstChildUrl.startsWith('/') ? firstChildUrl : '/' + firstChildUrl
-      const segments = firstChildFullPath.replace(/^\//, '').split('/')
-      const parentRoutePath = '/' + segments[0]
+    return null
+  }
 
-      const route = {
-        path: parentRoutePath,
-        name: `Menu-${menuId}`,
-        component: Layout,
-        redirect: firstChildFullPath,
+  const fullPath = menuUrl.startsWith('/') ? menuUrl : '/' + menuUrl
+
+  return {
+    path: fullPath,
+    name: `Menu-${menuId}`,
+    component: Layout,
+    redirect: fullPath,
+    meta: {
+      title: menuName,
+      icon: icon,
+      menuId: menuId,
+      menu_auth: menuAuth,
+      btnPermissions: btnList
+    },
+    children: [
+      {
+        path: '',
+        name: `Menu-${menuId}-View`,
+        component: loadComponent(menuUrl),
         meta: {
           title: menuName,
           icon: icon,
           menuId: menuId,
           menu_auth: menuAuth,
           btnPermissions: btnList
-        },
-        children: []
-      }
-
-      validChildren.forEach(child => {
-        const childRoute = buildChildRoute(child, parentRoutePath)
-        if (childRoute) {
-          route.children.push(childRoute)
         }
-      })
-
-      return route
-    }
-    return null
-  }
-
-  const fullPath = menuUrl.startsWith('/') ? menuUrl : '/' + menuUrl
-
-  if (validChildren.length > 0) {
-    const route = {
-      path: fullPath,
-      name: `Menu-${menuId}`,
-      component: Layout,
-      meta: {
-        title: menuName,
-        icon: icon,
-        menuId: menuId,
-        menu_auth: menuAuth,
-        btnPermissions: btnList
-      },
-      children: []
-    }
-
-    validChildren.forEach(child => {
-      const childRoute = buildChildRoute(child, fullPath)
-      if (childRoute) {
-        route.children.push(childRoute)
       }
-    })
-
-    return route
-  } else {
-    const segments = fullPath.replace(/^\//, '').split('/')
-    const parentPath = '/' + segments[0]
-    const childPath = segments.slice(1).join('/') || 'index'
-
-    return {
-      path: parentPath,
-      name: `Menu-${menuId}`,
-      component: Layout,
-      redirect: fullPath,
-      meta: {
-        title: menuName,
-        icon: icon,
-        menuId: menuId,
-        menu_auth: menuAuth,
-        btnPermissions: btnList
-      },
-      children: [
-        {
-          path: childPath,
-          name: `Menu-${menuId}-View`,
-          component: loadComponent(menuUrl),
-          meta: {
-            title: menuName,
-            icon: icon,
-            menuId: menuId,
-            menu_auth: menuAuth,
-            btnPermissions: btnList
-          }
-        }
-      ]
-    }
+    ]
   }
 }
 
-function buildChildRoute(menu, parentPath) {
-  const menuId = menu.menuId || menu.menu_id
-  const menuName = menu.menuName || menu.menu_name
-  const menuUrl = menu.menuURL || menu.menuUrl || menu.menu_url || '#'
-  const icon = menu.imageurl || menu.icon || 'table'
-  const menuAuth = menu.menu_auth
-  const btnList = menu.btnList || []
+function flattenMenus(menus, parentMenu = null) {
+  const result = []
 
-  const hasChildren = (menu.subMenuList && menu.subMenuList.length > 0) || (menu.children && menu.children.length > 0)
-  const childMenuList = menu.subMenuList || menu.children || []
-  const validChildren = hasChildren ? childMenuList.filter(sub => {
-    const subUrl = sub.menuURL || sub.menuUrl
-    if (subUrl && subUrl !== '#') return true
-    // 保留有子菜单的目录节点
-    if (sub.subMenuList && sub.subMenuList.length > 0) return true
-    return false
-  }) : []
+  menus.forEach(menu => {
+    const menuUrl = menu.menuURL || menu.menuUrl || menu.menu_url
 
-  const fullPath = menuUrl.startsWith('/') ? menuUrl : '/' + menuUrl
-  const parentSegments = parentPath.replace(/^\//, '').split('/')
-  const childSegments = fullPath.replace(/^\//, '').split('/')
-  const relativeSegments = childSegments.slice(parentSegments.length)
-  let relativePath = relativeSegments.join('/')
-
-  if (!relativePath) {
-    relativePath = 'index'
-  }
-
-  if (validChildren.length > 0) {
-    const route = {
-      path: relativePath,
-      name: `Menu-${menuId}`,
-      component: loadComponent(menuUrl),
-      meta: {
-        title: menuName,
-        icon: icon,
-        menuId: menuId,
-        menu_auth: menuAuth,
-        btnPermissions: btnList
-      },
-      children: []
+    if (menuUrl && menuUrl !== '#') {
+      result.push({
+        ...menu,
+        _parentName: parentMenu ? (parentMenu.menuName || parentMenu.menu_name) : null
+      })
     }
 
-    validChildren.forEach(child => {
-      const childRoute = buildChildRoute(child, fullPath)
-      if (childRoute) {
-        route.children.push(childRoute)
-      }
-    })
-
-    return route
-  } else {
-    return {
-      path: relativePath,
-      name: `Menu-${menuId}`,
-      component: loadComponent(menuUrl),
-      meta: {
-        title: menuName,
-        icon: icon,
-        menuId: menuId,
-        menu_auth: menuAuth,
-        btnPermissions: btnList
-      }
+    const childMenuList = menu.subMenuList || menu.children || []
+    if (childMenuList && childMenuList.length > 0) {
+      const childResults = flattenMenus(childMenuList, menu)
+      result.push(...childResults)
     }
-  }
+  })
+
+  return result
 }
 
 export function generateRoutesFromMenus(menus) {
   if (!menus || !Array.isArray(menus)) return []
 
-  // 调试：打印菜单数据，查看中标信息和投标信息的menuURL
-  console.log('Menu data:', menus)
-  const zhongbiaoMenu = menus.find(menu => menu.menuName === '中标信息' || menu.menu_name === '中标信息')
-  if (zhongbiaoMenu) {
-    console.log('Zhongbiao menu:', zhongbiaoMenu)
-  }
-  const biddingMenu = menus.find(menu => menu.menuName === '投标信息' || menu.menu_name === '投标信息' || menu.menuName === '招标信息' || menu.menu_name === '招标信息')
-  if (biddingMenu) {
-    console.log('Bidding menu:', biddingMenu)
-  }
+  const flatMenus = flattenMenus(menus)
+
+  console.log('=== Menu data received from backend ===')
+  flatMenus.forEach((menu, index) => {
+    console.log(`Menu ${index + 1}:`, {
+      menuName: menu.menuName || menu.menu_name,
+      menuURL: menu.menuURL || menu.menuUrl || menu.menu_url,
+      parentName: menu._parentName
+    })
+  })
 
   const routes = []
 
-  menus.forEach(menu => {
+  flatMenus.forEach(menu => {
     const route = buildRoute(menu)
     if (route) {
-      routes.push(route)
+      const staticRouteExists = constantRoutes.some(staticRoute =>
+        staticRoute.path === route.path
+      )
+      if (!staticRouteExists) {
+        if (route.path.includes('detail')) {
+          route.hidden = true
+        }
+        routes.push(route)
+      } else {
+        console.log(`Route ${route.path} already exists in constant routes, skipping dynamic generation`)
+      }
     }
+  })
+
+  console.log('=== Generated routes ===')
+  routes.forEach((route, index) => {
+    console.log(`Route ${index + 1}:`, {
+      path: route.path,
+      name: route.name,
+      redirect: route.redirect,
+      meta: { title: route.meta.title },
+      children: route.children ? route.children.map(child => ({ path: child.path, name: child.name, meta: { title: child.meta.title }})) : []
+    })
   })
 
   return routes

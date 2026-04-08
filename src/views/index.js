@@ -12,6 +12,7 @@ const views = {
   // 业务相关
   'data-platform/index': () => import('@/views/data-platform/index'),
   'data-platform/detail': () => import('@/views/data-platform/detail'),
+  'data-platform/CustomerAnalysis': () => import('@/views/data-platform/components/CustomerAnalysis'),
   'oper/list': () => import('@/views/oper/list'),
   'zhongbiao/list': () => import('@/views/zhongbiao/list'),
   'zhongbiao/detail': () => import('@/views/zhongbiao/detail'),

@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import NProgress from 'nprogress'
 import Layout from '@/layout'
-import systemRouter from './modules/system'
 
 /**
  * 路由 meta 字段说明:
@@ -99,50 +98,18 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/data-platform',
+    path: '/zhongbiao',
     component: Layout,
-    redirect: '/data-platform',
     hidden: true,
-    meta: { title: '数据中台', icon: 'database' },
     children: [
-      {
-        path: '',
-        component: () => import('@/views/data-platform/index'),
-        name: 'SalesOverview',
-        meta: { title: '销售数据总览', icon: 'chart' }
-      },
       {
         path: 'detail',
-        component: () => import('@/views/data-platform/detail'),
-        name: 'SalesDetail',
-        meta: { title: '销售详情', icon: 'detail' },
-        hidden: true
-      },
-      {
-        path: 'customer',
-        component: () => import('@/views/data-platform/components/CustomerAnalysis'),
-        name: 'CustomerAnalysis',
-        meta: { title: '客户行业看板', icon: 'pie' },
-        hidden: true
+        component: () => import('@/views/zhongbiao/detail'),
+        name: 'ZhongbiaoDetail',
+        meta: { title: '中标详情', hidden: true }
       }
     ]
-  },
-  {
-    path: '/system/data-permission',
-    component: Layout,
-    redirect: '/system/data-permission/index',
-    hidden: true,
-    meta: { title: '数据权限管理', icon: 'lock' },
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/system/data-permission/index'),
-        name: 'DataPermissionConfig',
-        meta: { title: '数据权限管理', icon: 'peoples' }
-      }
-    ]
-  },
-  { ...systemRouter, hidden: true }
+  }
 ]
 
 /**
@@ -166,10 +133,9 @@ router.onError(error => {
 })
 
 export function resetRouter() {
-  // Vue Router 4: remove all dynamic routes and re-add constant routes
+  // Vue Router 4: remove all routes and re-initialize
   const newRouter = initRouter()
-  // Replace the current router's routes
-  router.options.routes = constantRoutes
+  router.matcher = newRouter.matcher
 }
 
 export default router

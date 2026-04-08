@@ -26,27 +26,17 @@
             <span>{{ scope.row.publishDate }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="项目编号" width="160" align="center">
-          <template #default="scope">
-            <span>{{ scope.row.projectNo }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="项目名称" min-width="250" align="center">
+        <el-table-column label="项目名称" min-width="200" align="center">
           <template #default="scope">
             <span>{{ scope.row.title }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="招标单位" width="180" align="center">
+        <el-table-column label="招标单位" width="250" align="center">
           <template #default="scope">
             <span>{{ scope.row.customer || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="公告类型" width="120" align="center">
-          <template #default="scope">
-            <span>{{ scope.row.noticeType || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="中标人" width="180" align="center">
+        <el-table-column label="中标人" width="250" align="center">
           <template #default="scope">
             <span>{{ scope.row.winnerPrincipal || '-' }}</span>
           </template>
@@ -144,14 +134,25 @@ export default {
         let totalData = 0
 
         if (response.data && response.data.data && response.data.data.items) {
+          // 格式: { data: { data: { items: [...] } } }
           listData = response.data.data.items
           totalData = response.data.data.total || 0
         } else if (response.data && response.data.items) {
+          // 格式: { data: { items: [...] } }
           listData = response.data.items
           totalData = response.data.total || 0
+        } else if (response.items) {
+          // 格式: { items: [...] }
+          listData = response.items
+          totalData = response.total || 0
         } else if (response.data && Array.isArray(response.data)) {
+          // 格式: { data: [...] }
           listData = response.data
           totalData = response.data.length || 0
+        } else if (Array.isArray(response)) {
+          // 格式: [...]
+          listData = response
+          totalData = response.length || 0
         } else {
           listData = []
         }
@@ -159,6 +160,11 @@ export default {
         if (!Array.isArray(listData)) {
           listData = []
         }
+
+        console.log('处理后的数据:', {
+          listData: listData,
+          totalData: totalData
+        })
 
         this.list = listData
         this.total = totalData
@@ -207,10 +213,15 @@ export default {
       })
     },
     viewDetail(row) {
-      if (row.html_url) {
-        window.open(row.html_url, '_blank')
+      if (row.id) {
+        this.$router.push({
+          path: '/zhongbiao/detail',
+          query: {
+            id: row.id
+          }
+        })
       } else {
-        this.$message.warning('暂无详情链接')
+        this.$message.warning('暂无详情信息')
       }
     },
     reload() {
