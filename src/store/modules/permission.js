@@ -1,6 +1,7 @@
 import { constantRoutes } from '@/router'
 import Layout from '@/layout'
 import views from '@/views/index'
+import systemRouter from '@/router/modules/system'
 
 const DEFAULT_COMPONENT = () => import('@/views/dashboard/admin/index')
 
@@ -94,37 +95,53 @@ function flattenMenus(menus, parentMenu = null) {
 }
 
 export function generateRoutesFromMenus(menus) {
-  if (!menus || !Array.isArray(menus)) return []
-
-  const flatMenus = flattenMenus(menus)
-
-  console.log('=== Menu data received from backend ===')
-  flatMenus.forEach((menu, index) => {
-    console.log(`Menu ${index + 1}:`, {
-      menuName: menu.menuName || menu.menu_name,
-      menuURL: menu.menuURL || menu.menuUrl || menu.menu_url,
-      parentName: menu._parentName
-    })
-  })
-
   const routes = []
 
-  flatMenus.forEach(menu => {
-    const route = buildRoute(menu)
-    if (route) {
-      const staticRouteExists = constantRoutes.some(staticRoute =>
-        staticRoute.path === route.path
-      )
-      if (!staticRouteExists) {
-        if (route.path.includes('detail')) {
-          route.hidden = true
+  // 首先添加系统静态路由（包括 role/auth）
+  console.log('=== Adding system static routes ===')
+  if (systemRouter) {
+    console.log('Adding system static route:', systemRouter.path)
+    routes.push(systemRouter)
+  }
+
+  // 如果有后端菜单数据，添加动态路由
+  if (menus && Array.isArray(menus)) {
+    const flatMenus = flattenMenus(menus)
+
+    console.log('=== Menu data received from backend ===')
+    flatMenus.forEach((menu, index) => {
+      console.log(`Menu ${index + 1}:`, {
+        menuName: menu.menuName || menu.menu_name,
+        menuURL: menu.menuURL || menu.menuUrl || menu.menu_url,
+        parentName: menu._parentName
+      })
+    })
+
+    flatMenus.forEach(menu => {
+      const route = buildRoute(menu)
+      if (route) {
+        // 检查是否已存在于系统静态路由中
+        const routeExists = routes.some(existingRoute =>
+          existingRoute.path === route.path ||
+          (existingRoute.children && existingRoute.children.some(child =>
+            `${existingRoute.path}/${child.path}` === route.path
+          ))
+        )
+        const staticRouteExists = constantRoutes.some(staticRoute =>
+          staticRoute.path === route.path
+        )
+
+        if (!routeExists && !staticRouteExists) {
+          if (route.path.includes('detail')) {
+            route.hidden = true
+          }
+          routes.push(route)
+        } else {
+          console.log(`Route ${route.path} already exists, skipping dynamic generation`)
         }
-        routes.push(route)
-      } else {
-        console.log(`Route ${route.path} already exists in constant routes, skipping dynamic generation`)
       }
-    }
-  })
+    })
+  }
 
   console.log('=== Generated routes ===')
   routes.forEach((route, index) => {
@@ -132,8 +149,8 @@ export function generateRoutesFromMenus(menus) {
       path: route.path,
       name: route.name,
       redirect: route.redirect,
-      meta: { title: route.meta.title },
-      children: route.children ? route.children.map(child => ({ path: child.path, name: child.name, meta: { title: child.meta.title }})) : []
+      meta: { title: route.meta ? route.meta.title : '' },
+      children: route.children ? route.children.map(child => ({ path: child.path, name: child.name, meta: { title: child.meta ? child.meta.title : '' }})) : []
     })
   })
 

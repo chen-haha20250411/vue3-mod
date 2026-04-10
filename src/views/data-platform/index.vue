@@ -15,6 +15,9 @@
         <el-tab-pane label="增值业务" name="valueAdded">
           <ValueAddedBusiness />
         </el-tab-pane>
+        <el-tab-pane label="系统产品" name="product">
+          <ProductPurchaseAnalysis />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -23,12 +26,14 @@
 <script>
 import SalesOverview from './components/SalesOverview.vue'
 import ValueAddedBusiness from './components/ValueAddedBusiness.vue'
+import ProductPurchaseAnalysis from './components/ProductPurchaseAnalysis.vue'
 
 export default {
   name: 'DataPlatform',
   components: {
     SalesOverview,
-    ValueAddedBusiness
+    ValueAddedBusiness,
+    ProductPurchaseAnalysis
   },
   data() {
     return {

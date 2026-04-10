@@ -429,9 +429,6 @@ export default {
       Object.keys(this.permissionData).forEach(type => {
         grouped[type] = []
       })
-
-      console.log('groupPermissionsByType - 初始化的grouped:', grouped)
-
       permissions.forEach((permission, index) => {
         console.log(`处理权限 ${index}:`, permission)
         const rawScopeType = permission.scopeType || permission.type || permission.permissionType

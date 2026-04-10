@@ -31,3 +31,19 @@ export function getCustomerSalesData(params) {
     params
   })
 }
+
+export function getProductPurchaseReport(params) {
+  return request({
+    url: '/api/product/purchaseReportforXT',
+    method: 'get',
+    params
+  })
+}
+
+export function getProductPurchaseReportforTYCP(params) {
+  return request({
+    url: '/api/product/purchaseReportforTYCP',
+    method: 'get',
+    params
+  })
+}
