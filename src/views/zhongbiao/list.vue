@@ -2,22 +2,12 @@
   <div class="app-container">
     <div v-show="showList">
       <div class="filter-container">
-        <el-date-picker
-          v-model="q.dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="yyyy-MM-dd"
-          class="filter-item"
-          style="width: 280px"
-          @change="handleDateRangeChange"
-        />
-        <el-input v-model="q.projectNo" class="filter-item" placeholder="项目编号" style="width:150px" />
-        <el-input v-model="q.title" class="filter-item" placeholder="项目名称" style="width:200px" />
+        <el-input v-model="q.title" class="filter-item" placeholder="项目名称" style="width:180px" />
+        <el-input v-model="q.customer" class="filter-item" placeholder="招标单位" style="width:180px" />
+        <el-input v-model="q.winnerPrincipal" class="filter-item" placeholder="中标人" style="width:180px" />
         <el-button class="filter-item" type="primary" icon="el-icon-search" @click="query">{{ $t('table.search') }}</el-button>
-        <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="add">{{ $t('table.add') }}</el-button>
-        <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-refresh" @click="handleResetQuery()">重置</el-button>
+        <el-button v-if="isAdmin" class="filter-item" type="primary" icon="el-icon-edit" @click="add">{{ $t('table.add') }}</el-button>
+        <el-button class="filter-item" type="primary" icon="el-icon-refresh" @click="handleResetQuery()">重置</el-button>
       </div>
 
       <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;height:auto;">
@@ -52,11 +42,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column v-if="isAdmin" label="操作" width="150" align="center">
+          <template #default="scope">
+            <el-button type="text" size="mini" @click="update(scope.row.id)">修改</el-button>
+            <el-button type="text" size="mini" style="color: #F56C6C;" @click="handleDelete(scope.row.id)">删除</el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <pagination v-show=" total>0" v-model:page="q.currPageNo" v-model:limit="q.limit" style="float:right" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" @pagination="getList" />
     </div>
-    <el-card v-show="!showList">
+    <el-card v-show="!showList && isAdmin">
       <span>{{ title }}</span>
       <el-row>
         <el-col :span="18">
@@ -69,6 +65,24 @@
             </el-form-item>
             <el-form-item label="项目名称" prop="title">
               <el-input v-model="showdata.title" placeholder="请输入项目名称" />
+            </el-form-item>
+            <el-form-item label="招标单位" prop="customer">
+              <el-input v-model="showdata.customer" placeholder="请输入招标单位" />
+            </el-form-item>
+            <el-form-item label="中标人" prop="winnerPrincipal">
+              <el-input v-model="showdata.winnerPrincipal" placeholder="请输入中标人" />
+            </el-form-item>
+            <el-form-item label="中标金额" prop="winnerAmount">
+              <el-input v-model="showdata.winnerAmount" placeholder="请输入中标金额" />
+            </el-form-item>
+            <el-form-item label="公告类型" prop="noticeType">
+              <el-input v-model="showdata.noticeType" placeholder="请输入公告类型" />
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="showdata.remark" placeholder="请输入备注" />
+            </el-form-item>
+            <el-form-item label="原文链接" prop="html_url">
+              <el-input v-model="showdata.html_url" placeholder="请输入原文链接" />
             </el-form-item>
             <el-form-item label="详细内容" prop="html_content">
               <el-input v-model="showdata.html_content" type="textarea" :rows="6" placeholder="请输入详细内容" />
@@ -101,13 +115,16 @@ export default {
       list: null,
       total: 0,
       listLoading: false,
+      isAdmin: false,
       q: {
         currPageNo: 1,
         limit: 25,
-        projectNo: '',
         title: '',
+        customer: '',
+        winnerPrincipal: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        dateRange: null
       },
       showList: true,
       title: null,
@@ -125,8 +142,13 @@ export default {
   },
   created() {
     this.getList()
+    this.checkAdminPermission()
   },
   methods: {
+    checkAdminPermission() {
+      const roles = this.$store.state.user.roles || []
+      this.isAdmin = roles.includes('admin')
+    },
     getList() {
       this.listLoading = true
       api.fetchList(this.q).then(response => {
@@ -182,15 +204,7 @@ export default {
       this.q.currPageNo = val
       this.getList()
     },
-    handleDateRangeChange(val) {
-      if (val && val.length === 2) {
-        this.q.startDate = val[0]
-        this.q.endDate = val[1]
-      } else {
-        this.q.startDate = ''
-        this.q.endDate = ''
-      }
-    },
+
     query() {
       this.q.currPageNo = 1
       this.getList()
@@ -272,10 +286,12 @@ export default {
       this.q = {
         currPageNo: 1,
         limit: 25,
-        projectNo: '',
         title: '',
+        customer: '',
+        winnerPrincipal: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        dateRange: null
       }
       this.getList()
     },
@@ -290,8 +306,22 @@ export default {
 </script>
 
 <style scoped>
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
 .filter-item {
-  margin-right: 10px;
   margin-bottom: 0;
+}
+
+.el-button {
+  flex-shrink: 0;
 }
 </style>

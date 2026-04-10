@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import NProgress from 'nprogress'
 import Layout from '@/layout'
+import path from 'path-browserify'
 
 /**
  * 路由 meta 字段说明:
@@ -109,7 +110,26 @@ export const constantRoutes = [
         meta: { title: '中标详情', hidden: true }
       }
     ]
+  },
+  {
+    path: '/system',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'role/auth',
+        component: () => import('@/views/system/role/auth'),
+        name: 'RoleAuth',
+        hidden: true,
+        meta: {
+          title: '角色授权',
+          roles: ['admin'],
+          activeMenu: '/system/role'
+        }
+      }
+    ]
   }
+
 ]
 
 /**

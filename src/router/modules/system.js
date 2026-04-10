@@ -32,47 +32,8 @@ const systemRouter = {
         roles: ['admin'],
         activeMenu: '/system/role'
       }
-    },
-    {
-      path: 'data-permission',
-      component: () => import('@/views/system/data-permission/index'),
-      name: 'DataPermission',
-      meta: {
-        title: '数据权限管理',
-        icon: 'cascader',
-        roles: ['admin']
-      }
-    },
-    {
-      path: 'data-permission-new',
-      component: () => import('@/views/system/data-permission-new/index'),
-      name: 'DataPermissionNew',
-      meta: {
-        title: '数据权限管理(新版)',
-        icon: 'cascader',
-        roles: ['admin']
-      }
-    },
-    {
-      path: 'data-permission-enhanced',
-      component: () => import('@/views/system/data-permission-enhanced/index'),
-      name: 'DataPermissionEnhanced',
-      meta: {
-        title: '数据权限管理(增强版)',
-        icon: 'cascader',
-        roles: ['admin']
-      }
-    },
-    {
-      path: 'user',
-      component: () => import('@/views/enterprise/user/index'),
-      name: 'SystemUser',
-      meta: {
-        title: '用户管理',
-        icon: 'user',
-        roles: ['admin']
-      }
     }
+
   ]
 }
 

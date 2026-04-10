@@ -1,7 +1,6 @@
 import { constantRoutes } from '@/router'
 import Layout from '@/layout'
 import views from '@/views/index'
-import systemRouter from '@/router/modules/system'
 
 const DEFAULT_COMPONENT = () => import('@/views/dashboard/admin/index')
 
@@ -96,13 +95,6 @@ function flattenMenus(menus, parentMenu = null) {
 
 export function generateRoutesFromMenus(menus) {
   const routes = []
-
-  // 首先添加系统静态路由（包括 role/auth）
-  console.log('=== Adding system static routes ===')
-  if (systemRouter) {
-    console.log('Adding system static route:', systemRouter.path)
-    routes.push(systemRouter)
-  }
 
   // 如果有后端菜单数据，添加动态路由
   if (menus && Array.isArray(menus)) {

@@ -1022,7 +1022,7 @@ export default {
 
 .kpi-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
   margin-bottom: 15px;
 }
