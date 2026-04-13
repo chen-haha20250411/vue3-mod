@@ -399,9 +399,13 @@ export default {
       const currentYear = new Date().getFullYear()
       const currentMonth = new Date().getMonth() + 1
       const currentDay = new Date().getDate()
+      const nextDay = new Date()
+      nextDay.setDate(currentDay + 1)
+      const nextDayMonth = nextDay.getMonth() + 1
+      const nextDayDate = nextDay.getDate()
 
       const startDate = `${currentYear}-01-01`
-      const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
+      const endDate = `${currentYear}-${String(nextDayMonth).padStart(2, '0')}-${String(nextDayDate).padStart(2, '0')}`
 
       this.dateRange = [startDate, endDate]
     },

@@ -423,7 +423,6 @@ export default {
       this.listLoading = true
       const currentUserName = getCurrentUserName()
       const admin = isAdmin()
-
       const dataPermissions = getDataPermissions()
       let employeeName = ''
       let permissionValue = ''
@@ -462,7 +461,7 @@ export default {
 
       if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         staffName = this.selectedStaffs.join(',')
-      } else if (!employeeName) {
+      } else if (!employeeName && permissionValue !== 'ALL') {
         staffName = currentUserName
       }
 
@@ -495,7 +494,9 @@ export default {
         endDate
       }
 
-      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
+      if (permissionValue !== 'ALL' && staffName) {
+        currentParams.staffName = staffName
+      } else if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         currentParams.staffName = staffName
       }
 
@@ -504,7 +505,9 @@ export default {
         endDate: lastYearEndDate
       }
 
-      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
+      if (permissionValue !== 'ALL' && staffName) {
+        lastYearParams.staffName = staffName
+      } else if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         lastYearParams.staffName = staffName
       }
 
@@ -513,7 +516,9 @@ export default {
         endDate: twoYearsAgoEndDate
       }
 
-      if (permissionValue !== 'ALL' || (this.selectedStaffs && this.selectedStaffs.length > 0)) {
+      if (permissionValue !== 'ALL' && staffName) {
+        twoYearsAgoParams.staffName = staffName
+      } else if (this.selectedStaffs && this.selectedStaffs.length > 0) {
         twoYearsAgoParams.staffName = staffName
       }
 
@@ -538,6 +543,7 @@ export default {
       const dataPermissions = getDataPermissions()
 
       let employeeRealName = ''
+      let permissionValue = ''
       for (let i = 0; i < dataPermissions.length; i++) {
         const dataPerm = dataPermissions[i]
         if (dataPerm.permissions && Array.isArray(dataPerm.permissions)) {
@@ -545,6 +551,7 @@ export default {
             const perm = dataPerm.permissions[j]
             if (perm.permissionType && perm.permissionType.toLowerCase() === 'employee') {
               employeeRealName = perm.permissionName || ''
+              permissionValue = perm.permissionValue || ''
               break
             }
           }
@@ -552,6 +559,7 @@ export default {
         }
         if (dataPerm.permissionType && dataPerm.permissionType.toLowerCase() === 'employee') {
           employeeRealName = dataPerm.permissionName || ''
+          permissionValue = dataPerm.permissionValue || ''
           break
         }
       }
@@ -587,7 +595,7 @@ export default {
         const userNameList = currentUserRealName.split(',').map(n => n.trim()).filter(n => n)
 
         return dataArray.filter(item => {
-          if (admin) return true
+          if (admin || permissionValue === 'ALL') return true
           if (this.summaryDimension === 'staff') {
             const salesStaff = item['业务员'] || ''
             return userNameList.includes(salesStaff) || item['业务员'] === currentUserName

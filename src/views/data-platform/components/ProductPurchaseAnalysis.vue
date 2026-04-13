@@ -15,26 +15,7 @@
             @change="handleDateRangeChange"
           />
         </div>
-        <div v-if="staffList.length > 0" class="filter-item">
-          <span class="filter-label">业务员：</span>
-          <el-select
-            v-model="selectedStaffs"
-            multiple
-            collapse-tags
-            collapse-tags-tooltip
-            placeholder="全部业务员"
-            size="small"
-            style="width: 200px;"
-            @change="handleStaffChange"
-          >
-            <el-option
-              v-for="staff in staffList"
-              :key="staff"
-              :label="staff"
-              :value="staff"
-            />
-          </el-select>
-        </div>
+
       </div>
     </div>
 
@@ -150,7 +131,7 @@
 <script>
 import * as echarts from 'echarts'
 import { getProductPurchaseReport } from '@/api/dataPlatform'
-import { isAdmin, getCurrentUserName, getDataPermissions, getDataPermissionValues } from '@/utils/permission'
+import { isAdmin, getCurrentUserName, getDataPermissions, getDataPermissionNames } from '@/utils/permission'
 import { getAssessmentTargets } from '@/api/enterprise/user'
 
 export default {
@@ -158,7 +139,6 @@ export default {
   data() {
     return {
       dateRange: [],
-      selectedStaffs: [],
       staffList: [],
       listLoading: false,
       rawData: [],
@@ -245,10 +225,10 @@ export default {
       this.listLoading = true
       const currentUserName = getCurrentUserName()
       const admin = isAdmin()
-      const employeePermValues = getDataPermissionValues('EMPLOYEE')
+      const employeePermNames = getDataPermissionNames('EMPLOYEE')
       let employeeName = ''
 
-      if (employeePermValues.includes('ALL')) {
+      if (employeePermNames.includes('ALL')) {
         try {
           const res = await getAssessmentTargets()
           const data = res.data || res
@@ -279,15 +259,15 @@ export default {
         }
       }
 
-      let personName = '陈凤翔,刘心洁'
-
-      if (!admin) {
+      let personName = ''
+      // 如果是管理员或者数据权限是ALL、陈凤翔、刘心洁时，使用默认人员
+      if (admin || employeePermNames.includes('ALL') || employeePermNames.includes('陈凤翔') || employeePermNames.includes('刘心洁')) {
+        personName = '陈凤翔,刘心洁'
+      } else {
+        // 其他情况下使用当前用户
         personName = employeeName || currentUserName
       }
 
-      if (this.selectedStaffs && this.selectedStaffs.length > 0) {
-        personName = this.selectedStaffs.join(',')
-      }
       const [startDate, endDate] = this.dateRange || []
       const params = {
         startDate,
@@ -298,7 +278,6 @@ export default {
       try {
         const response = await getProductPurchaseReport(params)
         this.rawData = this.extractDataArray(response)
-        this.staffList = employeeName ? employeeName.split(',').map(n => n.trim()).filter(n => n) : []
         this.applyFilters()
       } catch (error) {
         console.error('获取采购数据失败:', error)
@@ -372,10 +351,6 @@ export default {
     },
 
     handleDateRangeChange() {
-      this.fetchData()
-    },
-
-    handleStaffChange() {
       this.fetchData()
     },
 

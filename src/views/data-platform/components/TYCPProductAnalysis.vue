@@ -33,16 +33,16 @@
         <el-card class="kpi-card">
           <div class="kpi-content">
             <div class="kpi-label">台机</div>
-            <div class="kpi-value main-value">{{ formatNumber(desktopKpiData.assessmentCompletionQuantity) }}</div>
+            <div class="kpi-value main-value">{{ formatCurrency(desktopKpiData.assessmentCompletionQuantity) }}万</div>
             <div class="kpi-divider" />
             <div class="kpi-details">
               <div class="detail-row">
                 <span class="detail-label">实际采购量：</span>
-                <span class="detail-value">{{ formatNumber(desktopKpiData.actualPurchaseQuantity) }}</span>
+                <span class="detail-value">{{ formatCurrency(desktopKpiData.actualPurchaseQuantity) }}万</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">考核目标：</span>
-                <span class="detail-value">{{ formatNumber(desktopKpiData.assessmentTarget) }}</span>
+                <span class="detail-value">{{ formatCurrency(desktopKpiData.assessmentTarget) }}万</span>
               </div>
               <div class="detail-row" :class="desktopKpiData.completionRate >= 100 ? 'positive' : 'negative'">
                 <span class="detail-label">考核完成率：</span>
@@ -54,16 +54,16 @@
         <el-card class="kpi-card">
           <div class="kpi-content">
             <div class="kpi-label">笔记本</div>
-            <div class="kpi-value main-value">{{ formatNumber(notebookKpiData.assessmentCompletionQuantity) }}</div>
+            <div class="kpi-value main-value">{{ formatCurrency(notebookKpiData.assessmentCompletionQuantity) }}万</div>
             <div class="kpi-divider" />
             <div class="kpi-details">
               <div class="detail-row">
                 <span class="detail-label">实际采购量：</span>
-                <span class="detail-value">{{ formatNumber(notebookKpiData.actualPurchaseQuantity) }}</span>
+                <span class="detail-value">{{ formatCurrency(notebookKpiData.actualPurchaseQuantity) }}万</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">考核目标：</span>
-                <span class="detail-value">{{ formatNumber(notebookKpiData.assessmentTarget) }}</span>
+                <span class="detail-value">{{ formatCurrency(notebookKpiData.assessmentTarget) }}万</span>
               </div>
               <div class="detail-row" :class="notebookKpiData.completionRate >= 100 ? 'positive' : 'negative'">
                 <span class="detail-label">考核完成率：</span>
@@ -75,16 +75,16 @@
         <el-card class="kpi-card">
           <div class="kpi-content">
             <div class="kpi-label">外设</div>
-            <div class="kpi-value main-value">{{ formatNumber(peripheralKpiData.assessmentCompletionQuantity) }}</div>
+            <div class="kpi-value main-value">{{ formatCurrency(peripheralKpiData.assessmentCompletionQuantity) }}万</div>
             <div class="kpi-divider" />
             <div class="kpi-details">
               <div class="detail-row">
                 <span class="detail-label">实际采购量：</span>
-                <span class="detail-value">{{ formatNumber(peripheralKpiData.actualPurchaseQuantity) }}</span>
+                <span class="detail-value">{{ formatCurrency(peripheralKpiData.actualPurchaseQuantity) }}万</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">考核目标：</span>
-                <span class="detail-value">{{ formatNumber(peripheralKpiData.assessmentTarget) }}</span>
+                <span class="detail-value">{{ formatCurrency(peripheralKpiData.assessmentTarget) }}万</span>
               </div>
               <div class="detail-row" :class="peripheralKpiData.completionRate >= 100 ? 'positive' : 'negative'">
                 <span class="detail-label">考核完成率：</span>
@@ -96,16 +96,16 @@
         <el-card class="kpi-card">
           <div class="kpi-content">
             <div class="kpi-label">汇总</div>
-            <div class="kpi-value main-value">{{ formatNumber(totalKpiData.assessmentCompletionQuantity) }}</div>
+            <div class="kpi-value main-value">{{ formatCurrency(totalKpiData.assessmentCompletionQuantity) }}万</div>
             <div class="kpi-divider" />
             <div class="kpi-details">
               <div class="detail-row">
                 <span class="detail-label">实际采购量：</span>
-                <span class="detail-value">{{ formatNumber(totalKpiData.actualPurchaseQuantity) }}</span>
+                <span class="detail-value">{{ formatCurrency(totalKpiData.actualPurchaseQuantity) }}万</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">考核目标：</span>
-                <span class="detail-value">{{ formatNumber(totalKpiData.assessmentTarget) }}</span>
+                <span class="detail-value">{{ formatCurrency(totalKpiData.assessmentTarget) }}万</span>
               </div>
               <div class="detail-row" :class="totalKpiData.completionRate >= 100 ? 'positive' : 'negative'">
                 <span class="detail-label">考核完成率：</span>
@@ -135,19 +135,19 @@
       >
         <el-table-column prop="group" label="小组" width="120" />
         <el-table-column prop="configProduct" label="配置表产品" min-width="200" />
-        <el-table-column prop="actualPurchaseQuantity" label="实际采购量" width="120" align="right">
+        <el-table-column prop="actualPurchaseQuantity" label="实际采购量(万)" width="120" align="right">
           <template #default="scope">
-            <span style="color: #409eff; font-weight: bold;">{{ formatNumber(scope.row.actualPurchaseQuantity) }}</span>
+            <span style="color: #409eff; font-weight: bold;">{{ formatCurrency(scope.row.actualPurchaseQuantity) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="assessmentPurchaseQuantity" label="考核采购量" width="120" align="right">
+        <el-table-column prop="assessmentPurchaseQuantity" label="考核采购量(万)" width="120" align="right">
           <template #default="scope">
-            <span style="color: #67c23a; font-weight: bold;">{{ formatNumber(scope.row.assessmentPurchaseQuantity) }}</span>
+            <span style="color: #67c23a; font-weight: bold;">{{ formatCurrency(scope.row.assessmentPurchaseQuantity) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="assessmentTarget" label="考核目标" width="120" align="right">
+        <el-table-column prop="assessmentTarget" label="考核目标(万)" width="120" align="right">
           <template #default="scope">
-            <span style="color: #909399;">{{ formatNumber(scope.row.assessmentTarget) }}</span>
+            <span style="color: #909399;">{{ formatCurrency(scope.row.assessmentTarget) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="completionRate" label="考核完成率" width="120" align="center">
@@ -251,6 +251,11 @@ export default {
       const startDate = new Date().getFullYear() + '-01-01'
       const endDate = new Date().toISOString().substring(0, 10)
       this.dateRange = [startDate, endDate]
+    },
+    formatCurrency(value) {
+      if (value == null || isNaN(value)) return '0'
+      const wan = value / 10000
+      return wan.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
     },
 
     async fetchData() {
