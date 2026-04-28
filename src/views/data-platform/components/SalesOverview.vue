@@ -35,11 +35,11 @@
       <div class="filter-section">
         <div class="filter-label">统计维度：</div>
         <el-radio-group v-model="summaryDimension" size="small" @change="handleDimensionChange">
-          <el-radio-button label="staff">按业务员</el-radio-button>
-          <el-radio-button label="parentDept">按父级部门</el-radio-button>
-          <el-radio-button label="department">按部门</el-radio-button>
-          <el-radio-button label="business">按业务线</el-radio-button>
-          <el-radio-button label="branch">按分支机构</el-radio-button>
+          <el-radio-button value="staff">按业务员</el-radio-button>
+          <el-radio-button value="parentDept">按父级部门</el-radio-button>
+          <el-radio-button value="department">按部门</el-radio-button>
+          <el-radio-button value="business">按业务线</el-radio-button>
+          <el-radio-button value="branch">按分支机构</el-radio-button>
         </el-radio-group>
       </div>
       <div v-if="staffList.length > 0" class="filter-section">
@@ -307,7 +307,28 @@ export default {
         targetProfitRate: 0
       },
       staffList: [],
-      selectedStaffs: []
+      selectedStaffs: [],
+      // 常量定义
+      DIMENSION_KEY_MAP: {
+        staff: '业务员',
+        parentDept: '父级部门',
+        department: '部门',
+        business: '业务线',
+        branch: '分支机构'
+      },
+      QUARTER_COEFFICIENTS: [0.17, 0.23, 0.27, 0.33],
+      QUARTER_DAYS: [89, 92, 92, 92],
+      TOOLTIP_COLORS: {
+        sales: '#ff7875',
+        profit: '#69c0ff',
+        positive: '#ff4d4f',
+        negative: '#73d13d',
+        muted: '#888',
+        light: '#aaa',
+        text: '#fff',
+        border: '#555',
+        bg: 'rgba(50, 50, 50, 0.95)'
+      }
     }
   },
   computed: {
@@ -320,27 +341,13 @@ export default {
       return years
     },
     getDimensionLabel() {
-      const labels = {
-        staff: '业务员',
-        parentDept: '父级部门',
-        department: '部门',
-        business: '业务线',
-        branch: '分支机构'
-      }
-      return labels[this.summaryDimension] || '业务员'
+      return this.DIMENSION_KEY_MAP[this.summaryDimension] || '业务员'
     },
     tableData() {
       const currentData = this.currentData || []
       const coefficient = this.currentTargetCoefficient || 0
 
-      const dimensionKeyMap = {
-        staff: '业务员',
-        parentDept: '父级部门',
-        department: '部门',
-        business: '业务线',
-        branch: '分支机构'
-      }
-      const dimensionKey = dimensionKeyMap[this.summaryDimension] || '业务员'
+      const dimensionKey = this.DIMENSION_KEY_MAP[this.summaryDimension] || '业务员'
 
       const groupedData = new Map()
       currentData.forEach(item => {
@@ -402,7 +409,7 @@ export default {
       })
 
       processedData = processedData.filter(item => item.sales > 0 || item.profit > 0)
-      processedData.sort((a, b) => b.targetSales - a.targetSales)
+      processedData.sort((a, b) => b.sales - a.sales)
       return processedData
     }
   },
@@ -566,15 +573,7 @@ export default {
 
       const currentUserRealName = employeeRealName || currentUserName
 
-      const dimensionKeyMap = {
-        staff: '业务员',
-        parentDept: '父级部门',
-        department: '部门',
-        business: '业务线',
-        branch: '分支机构'
-      }
-
-      const dimensionKey = dimensionKeyMap[this.summaryDimension] || '业务员'
+      const dimensionKey = this.DIMENSION_KEY_MAP[this.summaryDimension] || '业务员'
 
       const processData = (data) => {
         if (!data) {
@@ -651,15 +650,7 @@ export default {
 
       const currentUserRealName = employeeRealName || currentUserName
 
-      const dimensionKeyMap = {
-        staff: '业务员',
-        parentDept: '父级部门',
-        department: '部门',
-        business: '业务线',
-        branch: '分支机构'
-      }
-
-      const dimensionKey = dimensionKeyMap[this.summaryDimension]
+      const dimensionKey = this.DIMENSION_KEY_MAP[this.summaryDimension]
 
       if (this.summaryDimension === 'parentDept') {
         const parentDeptMap = new Map()
@@ -944,54 +935,54 @@ export default {
       const selectedQuarter = this.selectedQuarter
       const selectedYear = this.selectedYear
 
+      // 季度系数（全年为1）
+      const qc = this.QUARTER_COEFFICIENTS
+      // 各季度天数（近似值）
+      const qd = this.QUARTER_DAYS
+
       let quarterCoefficient = 0
 
       if (currentMonth >= 1 && currentMonth <= 3) {
-        quarterCoefficient = 0.17
+        quarterCoefficient = qc[0]
       } else if (currentMonth >= 4 && currentMonth <= 6) {
-        quarterCoefficient = 0.23
+        quarterCoefficient = qc[1]
       } else if (currentMonth >= 7 && currentMonth <= 9) {
-        quarterCoefficient = 0.27
+        quarterCoefficient = qc[2]
       } else {
-        quarterCoefficient = 0.33
+        quarterCoefficient = qc[3]
       }
 
       const monthCoefficient = quarterCoefficient / 3
       const weekCoefficient = monthCoefficient / 4
-
-      // 周系数: 季度系数/3/4
       const weekCoefficientFixed = quarterCoefficient / 3 / 4
 
-      // 累计当前系数: 第一季度17% + 第二季度按天计算(0.23/3/30*当前日)
+      // 累计当前系数
+      const q1Coeff = qc[0]
+      const q2Coeff = qc[1]
+      const q3Coeff = qc[2]
+      const q4Coeff = qc[3]
+
       let cumulativeCoefficient = 0
       if (currentMonth >= 1 && currentMonth <= 3) {
-        // 第一季度，累计到当前日期
-        cumulativeCoefficient = 0.17 / 3 / 31 * currentDay
+        cumulativeCoefficient = q1Coeff / qd[0] * currentDay
       } else if (currentMonth >= 4 && currentMonth <= 6) {
-        // 第二季度，第一季度 + 第二季度按天计算
-        const q1Coefficient = 0.17
-        const q2DayCoefficient = 0.23 / 3 / 30 * currentDay
-        cumulativeCoefficient = q1Coefficient + q2DayCoefficient
+        cumulativeCoefficient = q1Coeff + q2Coeff / qd[1] * currentDay
       } else if (currentMonth >= 7 && currentMonth <= 9) {
-        // 第三季度，前两个季度 + 第三季度按天计算
-        cumulativeCoefficient = 0.17 + 0.23 + (0.27 / 3 / 31 * currentDay)
+        cumulativeCoefficient = q1Coeff + q2Coeff + (q3Coeff / qd[2] * currentDay)
       } else {
-        // 第四季度，前三个季度 + 第四季度按天计算
-        cumulativeCoefficient = 0.17 + 0.23 + 0.27 + (0.33 / 3 / 30 * currentDay)
+        cumulativeCoefficient = q1Coeff + q2Coeff + q3Coeff + (q4Coeff / qd[3] * currentDay)
       }
 
       // 月系数：根据选择的月份计算
       const getMonthCoefficientByMonth = (month) => {
         const monthQuarter = Math.ceil(month / 3)
-        const quarterCoeffs = [0.17, 0.23, 0.27, 0.33]
         const monthInQuarter = ((month - 1) % 3) + 1
-        return quarterCoeffs[monthQuarter - 1] / 3
+        return qc[monthQuarter - 1] / 3
       }
 
       // 季度系数：根据选择的季度计算
       const getQuarterCoefficientByQuarter = (quarter) => {
-        const quarterCoeffs = [0.17, 0.23, 0.27, 0.33]
-        return quarterCoeffs[quarter - 1]
+        return qc[quarter - 1]
       }
       // 计算当前时间维度的系数
       switch (this.timeDimension) {
@@ -1090,9 +1081,19 @@ export default {
       this.chartRef = this.$refs.chartRef
       if (!this.chartRef) return
 
+      // 销毁旧实例
+      if (this.chartInstance) {
+        this.chartInstance.dispose()
+        this.chartInstance = null
+      }
+
       this.chartInstance = echarts.init(this.chartRef)
       this.chartInstance.on('click', this.handleChartClick)
-      this.updateChart()
+
+      // 延迟调用 updateChart
+      this.$nextTick(() => {
+        this.updateChart()
+      })
 
       window.addEventListener('resize', () => {
         if (this.chartInstance) {
@@ -1106,6 +1107,11 @@ export default {
     updateChart() {
       if (!this.chartInstance || !this.tableData || this.tableData.length === 0) return
 
+      // 保存到局部变量，避免 ECharts formatter 中 this 上下文问题
+      const tableData = this.tableData
+      const timeDimension = this.timeDimension
+      const currentTargetCoefficient = this.currentTargetCoefficient
+
       const timeDimensionLabel = {
         week: '周',
         month: '月',
@@ -1113,31 +1119,103 @@ export default {
         year: '年',
         cumulative: '累计'
       }
-      const currentTimeLabel = timeDimensionLabel[this.timeDimension] || '期'
-      const data = this.tableData.slice(0, 10)
+      const currentTimeLabel = timeDimensionLabel[timeDimension] || '期'
+      const data = tableData.slice(0, 10)
       const categories = data.map(item => item.category || '-')
-      const salesData = data.map(item => (item.sales || 0) / 10000)
-      const targetSalesData = data.map(item => (item.targetSales || 0) / 10000)
-      const profitData = data.map(item => (item.profit || 0) / 10000)
-      const targetProfitData = data.map(item => (item.targetProfit || 0) / 10000)
+      const diffBase = timeDimension === 'cumulative' ? currentTargetCoefficient : 1
+
+      // 提取 tooltip 数据，只计算一次
+      const tooltipDataList = data.map(item => {
+        const sales = item.sales || 0
+        const profit = item.profit || 0
+        const targetSales = item.targetSales || 0
+        const targetProfit = item.targetProfit || 0
+        const salesCompletionRate = item.salesCompletionRate || 0
+        const profitCompletionRate = item.profitCompletionRate || 0
+        return {
+          category: item.category || '',
+          sales,
+          profit,
+          targetSales,
+          targetProfit,
+          salesCompletionRate,
+          profitCompletionRate,
+          salesDiff: salesCompletionRate / 100 - diffBase,
+          profitDiff: profitCompletionRate / 100 - diffBase
+        }
+      })
+
+      // 复用 tooltip 数据
+      const salesData = data.map((item, i) => ({
+        value: (item.sales || 0) / 10000,
+        _tooltip: tooltipDataList[i]
+      }))
+      const profitData = data.map((item, i) => ({
+        value: (item.profit || 0) / 10000,
+        _tooltip: tooltipDataList[i]
+      }))
+
       const option = {
         tooltip: {
           show: true,
-          trigger: 'axis',
-          axisPointer: {
-            type: 'shadow'
+          trigger: 'item',
+          z: 1000,
+          backgroundColor: this.TOOLTIP_COLORS.bg,
+          borderColor: '#333',
+          borderWidth: 1,
+          textStyle: {
+            color: this.TOOLTIP_COLORS.text,
+            fontSize: 13
           },
-          formatter: (params) => {
-            if (!params || params.length === 0) return ''
-            let result = `<div><strong>${params[0].name}</strong></div>`
-            params.forEach(param => {
-              result += `<div>${param.seriesName}: ${param.value.toFixed(2)} 万</div>`
-            })
-            return result
-          }
+          formatter: function(params) {
+            var tooltipData = params.data._tooltip
+            if (!tooltipData) return params.name + ': ' + params.value
+
+            var salesDiff = tooltipData.sales - tooltipData.targetSales
+            var profitDiff = tooltipData.profit - tooltipData.targetProfit
+            var salesRateDiff = tooltipData.salesCompletionRate / 100 - currentTargetCoefficient
+            var profitRateDiff = tooltipData.profitCompletionRate / 100 - currentTargetCoefficient
+            var c = this.TOOLTIP_COLORS
+
+            var html = '<div style="font-size:14px;font-weight:bold;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid ' + c.border + ';">' + tooltipData.category + '</div>'
+
+            html += '<div style="margin-bottom:6px;">'
+            html += '<span style="color:' + c.sales + ';font-weight:bold;">销售额</span>'
+            html += '<span style="margin-left:8px;">' + (tooltipData.sales / 10000).toFixed(2) + ' 万</span>'
+            html += '<span style="margin-left:8px;color:' + c.muted + ';">|</span>'
+            html += '<span style="margin-left:8px;color:' + c.light + ';">目标: ' + (tooltipData.targetSales / 10000).toFixed(2) + ' 万</span>'
+            html += '<span style="margin-left:8px;">差值: <span style="color:' + (salesDiff >= 0 ? c.positive : c.negative) + ';font-weight:bold;">' + (salesDiff >= 0 ? '+' : '') + (salesDiff / 10000).toFixed(2) + ' 万</span></span>'
+            html += '</div>'
+
+            html += '<div style="margin-bottom:6px;">'
+            html += '<span style="color:' + c.profit + ';font-weight:bold;">差价</span>'
+            html += '<span style="margin-left:8px;">' + (tooltipData.profit / 10000).toFixed(2) + ' 万</span>'
+            html += '<span style="margin-left:8px;color:' + c.muted + ';">|</span>'
+            html += '<span style="margin-left:8px;color:' + c.light + ';">目标: ' + (tooltipData.targetProfit / 10000).toFixed(2) + ' 万</span>'
+            html += '<span style="margin-left:8px;">差值: <span style="color:' + (profitDiff >= 0 ? c.positive : c.negative) + ';font-weight:bold;">' + (profitDiff >= 0 ? '+' : '') + (profitDiff / 10000).toFixed(2) + ' 万</span></span>'
+            html += '</div>'
+
+            html += '<div style="border-top:1px solid ' + c.border + ';margin:8px 0;padding-top:8px;">'
+            html += '<span style="color:' + c.light + ';font-size:12px;">目标系数: <span style="color:' + c.text + ';font-weight:bold;">' + currentTargetCoefficient.toFixed(4) + '</span></span>'
+            html += '</div>'
+
+            html += '<div style="margin-bottom:4px;">'
+            html += '<span style="color:' + c.light + ';">销售完成率:</span>'
+            html += '<span style="margin-left:8px;font-weight:bold;color:' + (salesRateDiff >= 0 ? c.positive : c.negative) + ';">' + tooltipData.salesCompletionRate.toFixed(2) + '%</span>'
+            html += '<span style="margin-left:6px;font-size:12px;color:' + (salesRateDiff >= 0 ? c.sales : c.profit) + ';">(' + (salesRateDiff >= 0 ? '+' : '') + (salesRateDiff * 100).toFixed(2) + '%)</span>'
+            html += '</div>'
+
+            html += '<div>'
+            html += '<span style="color:' + c.light + ';">差价完成率:</span>'
+            html += '<span style="margin-left:8px;font-weight:bold;color:' + (profitRateDiff >= 0 ? c.positive : c.negative) + ';">' + tooltipData.profitCompletionRate.toFixed(2) + '%</span>'
+            html += '<span style="margin-left:6px;font-size:12px;color:' + (profitRateDiff >= 0 ? c.sales : c.profit) + ';">(' + (profitRateDiff >= 0 ? '+' : '') + (profitRateDiff * 100).toFixed(2) + '%)</span>'
+            html += '</div>'
+
+            return html
+          }.bind(this)
         },
         legend: {
-          data: [`${currentTimeLabel}销售额`, `${currentTimeLabel}目标销售额`, `${currentTimeLabel}差价`, `${currentTimeLabel}目标差价`],
+          data: [`${currentTimeLabel}销售额`, `${currentTimeLabel}差价`],
           bottom: 0
         },
         grid: {
@@ -1177,26 +1255,15 @@ export default {
             label: {
               show: true,
               position: 'center',
-              formatter: (params) => params.value.toFixed(1) + '万',
+              formatter: function(params) {
+                var val = typeof params.value === 'object' ? params.value.value : params.value
+                return val.toFixed(1) + '万'
+              },
               fontSize: 12,
               fontWeight: 'bold',
               offset: [0, -30]
             }
           },
-          // {
-          //   name: `${currentTimeLabel}目标销售额`,
-          //   type: 'bar',
-          //   data: targetSalesData,
-          //   itemStyle: { color: '#409eff' },
-          //   barWidth: '15%',
-          //   label: {
-          //     show: true,
-          //     position: 'top',
-          //     formatter: (params) => params.value.toFixed(1) + '万',
-          //     fontSize: 10,
-          //     offset: [0, -15]
-          //   }
-          // },
           {
             name: `${currentTimeLabel}差价`,
             type: 'bar',
@@ -1206,7 +1273,10 @@ export default {
             label: {
               show: true,
               position: 'bottom',
-              formatter: (params) => params.value.toFixed(1) + '万',
+              formatter: function(params) {
+                var val = typeof params.value === 'object' ? params.value.value : params.value
+                return val.toFixed(1) + '万'
+              },
               fontSize: 12,
               fontWeight: 'bold',
               offset: [0, -30]
@@ -1311,11 +1381,12 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 24px;
+    padding: 20px 24px;
     background: #fff;
-    border-radius: 4px;
-    border: 1px solid #ebeef5;
+    border-radius: 14px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
   .filter-section {
@@ -1326,71 +1397,96 @@ export default {
 
   .filter-label {
     font-size: 14px;
-    color: #606266;
+    color: #5a6275;
     font-weight: 500;
   }
 
   .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
   }
 
   .chart-section {
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 24px;
+    padding: 24px;
     background: #fff;
-    border-radius: 4px;
-    border: 1px solid #ebeef5;
+    border-radius: 14px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 
     .section-title {
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
-      margin-bottom: 15px;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f2f7;
     }
 
     .chart-container {
       width: 100%;
-      height: 400px;
+      height: 380px;
     }
   }
 
   .summary-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    }
+
     :deep(.el-card__header) {
-      padding: 12px 20px;
-      border-bottom: 2px solid #f0f2f5;
+      padding: 18px 24px;
+      border-bottom: none;
+      background: transparent;
     }
 
     .card-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      color: #303133;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &::before {
+        content: '';
+        width: 4px;
+        height: 18px;
+        border-radius: 2px;
+      }
     }
 
     .summary-content {
-      padding: 5px 0;
+      padding: 8px 24px 24px;
     }
 
     .main-value {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: bold;
-      color: #303133;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
     }
 
     .comparison-section {
-      margin-bottom: 15px;
-      padding-bottom: 15px;
-      border-bottom: 1px dashed #dcdfe6;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f0f2f7;
     }
 
     .comparison-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 10px;
+      margin-bottom: 10px;
       font-size: 13px;
 
       .label {
@@ -1400,7 +1496,8 @@ export default {
 
       .value {
         color: #606266;
-        min-width: 80px;
+        min-width: 85px;
+        font-weight: 500;
       }
     }
 
@@ -1408,8 +1505,8 @@ export default {
       .target-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
+        gap: 10px;
+        margin-bottom: 10px;
         font-size: 13px;
 
         .label {
@@ -1420,6 +1517,7 @@ export default {
         .value {
           color: #606266;
           min-width: 100px;
+          font-weight: 500;
         }
 
         .target-coefficient {
@@ -1441,33 +1539,48 @@ export default {
   }
 
   .sales-card {
+    .card-title::before {
+      background: linear-gradient(180deg, #f56c6c, #e65d6e);
+    }
     .main-value {
       color: #f56c6c;
     }
   }
 
   .profit-card {
+    .card-title::before {
+      background: linear-gradient(180deg, #30b08f, #28a078);
+    }
     .main-value {
-      color: #009688;
+      color: #30b08f;
     }
   }
 
   .diff-positive {
     color: #f56c6c;
+    font-weight: 500;
   }
 
   .diff-negative {
     color: #67c23a;
+    font-weight: 500;
   }
 
   .completion-rate-section {
-    margin-top: 20px;
+    margin-top: 24px;
+    padding: 24px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 
     .section-title {
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
-      margin-bottom: 15px;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f2f7;
     }
   }
 

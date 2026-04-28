@@ -1,37 +1,33 @@
 <template>
   <div class="customer-analysis">
     <div class="filter-bar">
-      <div class="filter-row">
-        <div class="filter-item">
-          <span class="filter-label">时间范围：</span>
+      <el-form inline size="small" @submit.native.prevent>
+        <el-form-item label="">
           <el-date-picker
             v-model="dateRange"
             type="daterange"
             range-separator="至"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
-            size="small"
             value-format="YYYY-MM-DD"
+            style="width: 220px;"
             @change="handleDateRangeChange"
           />
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">客户属性：</span>
-          <el-radio-group v-model="customerType" size="small" @change="handleCustomerTypeChange">
-            <el-radio-button label="ORG">客户组织</el-radio-button>
-            <el-radio-button label="CUSTOMER">客户</el-radio-button>
+        </el-form-item>
+        <el-form-item label="">
+          <el-radio-group v-model="customerType" @change="handleCustomerTypeChange">
+            <el-radio-button value="ORG">客户组织</el-radio-button>
+            <el-radio-button value="CUSTOMER">客户</el-radio-button>
           </el-radio-group>
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">行业：</span>
+        </el-form-item>
+        <el-form-item label="">
           <el-select
             v-model="selectedIndustries"
             multiple
             collapse-tags
             collapse-tags-tooltip
-            placeholder="全部行业"
-            size="small"
-            style="width: 200px;"
+            placeholder="行业"
+            style="width: 140px;"
             @change="handleFilterChange"
           >
             <el-option
@@ -41,17 +37,15 @@
               :value="industry"
             />
           </el-select>
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">销售额区间：</span>
+        </el-form-item>
+        <el-form-item label="">
           <el-select
             v-model="selectedRanges"
             multiple
             collapse-tags
             collapse-tags-tooltip
-            placeholder="全部区间"
-            size="small"
-            style="width: 280px;"
+            placeholder="销售额区间"
+            style="width: 180px;"
             @change="handleFilterChange"
           >
             <el-option
@@ -61,17 +55,15 @@
               :value="range"
             />
           </el-select>
-        </div>
-        <div v-if="staffList.length > 0" class="filter-item">
-          <span class="filter-label">业务员：</span>
+        </el-form-item>
+        <el-form-item v-if="staffList.length > 0" label="">
           <el-select
             v-model="selectedStaffs"
             multiple
             collapse-tags
             collapse-tags-tooltip
-            placeholder="全部业务员"
-            size="small"
-            style="width: 200px;"
+            placeholder="业务员"
+            style="width: 140px;"
             @change="handleStaffChange"
           >
             <el-option
@@ -81,8 +73,8 @@
               :value="staff"
             />
           </el-select>
-        </div>
-      </div>
+        </el-form-item>
+      </el-form>
     </div>
 
     <div class="kpi-cards">
@@ -137,7 +129,7 @@
       <el-card class="kpi-card">
         <div class="kpi-content">
           <div class="kpi-label">客户统计</div>
-          <div class="kpi-value customer-value">{{ customerType === 'ORG' ? kpiData.totalCustomers : kpiData.totalCustomers }}</div>
+          <div class="kpi-value customer-value">{{ kpiData.totalCustomers }}</div>
           <div class="kpi-details">
             <div class="detail-row">
               <span class="detail-label">{{ customerType === 'ORG' ? '客户组织数：' : '客户总数：' }}</span>
@@ -197,49 +189,66 @@
         border
         stripe
         style="width: 100%;"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600', fontSize: '12px' }"
+        :cell-style="{ fontSize: '12px' }"
         :default-sort="{ prop: 'currentSales', order: 'descending' }"
+        row-class-name="table-row-hover"
       >
-        <el-table-column prop="orgName" :label="customerType === 'ORG' ? '客户组织' : '客户名称'" width="220" />
-        <el-table-column prop="industry" label="行业" width="80" />
-        <el-table-column prop="customerCount" label="客户数量" width="90" align="center" />
-        <el-table-column prop="salesRange" label="销售额区间" width="120" align="center">
+        <el-table-column prop="orgName" :label="customerType === 'ORG' ? '客户组织' : '客户名称'" width="250" show-overflow-tooltip />
+        <el-table-column prop="industry" label="行业" width="75" align="center">
           <template #default="scope">
-            <el-tag :type="getSalesRangeTagType(scope.row.salesRange)" size="small">
+            <el-tag type="info" size="small" effect="plain" style="border-radius: 4px;">{{ scope.row.industry }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="customerCount" label="客户数" width="65" align="center" />
+        <el-table-column prop="salesRange" label="销售额区间" width="100" align="center">
+          <template #default="scope">
+            <el-tag :type="getSalesRangeTagType(scope.row.salesRange)" size="small" effect="dark" style="border-radius: 4px; font-size: 10px;">
               {{ scope.row.salesRange }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="currentSales" label="当期销售额" width="140" align="right" sortable>
+        <el-table-column label="当期销售额" width="100" align="center">
           <template #default="scope">
-            <span style="color: #f56c6c; font-weight: bold;">{{ formatCurrency(scope.row.currentSales) }}</span>
+            <span style="color: #409eff; font-weight: 600; font-size: 12px;">{{ formatCurrency(scope.row.currentSales) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="lastYearSales" label="同期销售额" width="140" align="right" sortable>
+        <el-table-column label="去年同期" width="100" align="center">
           <template #default="scope">
-            <span style="color: #909399;">{{ formatCurrency(scope.row.lastYearSales) }}</span>
+            <span style="color: #909399; font-size: 12px;">{{ formatCurrency(scope.row.lastYearSales) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="salesYoYRate" label="销售额同比" width="140" sortable align="center">
+        <el-table-column label="前年全额" width="100" align="center">
           <template #default="scope">
-            <span :style="{ color: scope.row.salesYoYRate <= 0 ? '#67c23a' : '#f56c6c', fontWeight: '600' }">
-              {{ formatCurrency(scope.row.salesYoYRate) >= 0 ? '+' : '' }}{{ formatCurrency(scope.row.salesYoYRate) }}
+            <span style="color: #909399; font-size: 12px;">{{ formatCurrency(scope.row.yearBeforeLastSales) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="salesYoYRate" label="去年同期同比" width="130" sortable align="center">
+          <template #default="scope">
+            <span :style="{ color: scope.row.salesYoYRate >= 0 ? '#f56c6c' : '#67c23a', fontWeight: '600', fontSize: '11px' }">
+              {{ scope.row.salesYoYRate >= 0 ? '+' : '' }}{{ formatCurrency(scope.row.salesYoYRate) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="currentProfit" label="当期差价" width="140" align="right" sortable>
+        <el-table-column label="当期差价" width="100" align="center">
           <template #default="scope">
-            <span style="color: #009688; font-weight: bold;">{{ formatCurrency(scope.row.currentProfit) }}</span>
+            <span style="color: #009688; font-weight: 600; font-size: 12px;">{{ formatCurrency(scope.row.currentProfit) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="lastYearProfit" label="同期差价" width="140" align="right" sortable>
+        <el-table-column label="去年同期" width="100" align="center">
           <template #default="scope">
-            <span style="color: #909399;">{{ formatCurrency(scope.row.lastYearProfit) }}</span>
+            <span style="color: #909399; font-size: 12px;">{{ formatCurrency(scope.row.lastYearProfit) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="profitYoYRate" label="差价同比" width="140" sortable align="center">
+        <el-table-column label="前年全额" width="100" align="center">
           <template #default="scope">
-            <span :style="{ color: scope.row.profitYoYRate <= 0 ? '#67c23a' : '#f56c6c', fontWeight: '600' }">
-              {{ formatCurrency(scope.row.profitYoYRate) >= 0 ? '+' : '' }}{{ formatCurrency(scope.row.profitYoYRate) }}
+            <span style="color: #909399; font-size: 12px;">{{ formatCurrency(scope.row.yearBeforeLastProfit) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="profitYoYRate" label="去年同期同比" width="130" sortable align="center">
+          <template #default="scope">
+            <span :style="{ color: scope.row.profitYoYRate >= 0 ? '#f56c6c' : '#67c23a', fontWeight: '600', fontSize: '11px' }">
+              {{ scope.row.profitYoYRate >= 0 ? '+' : '' }}{{ formatCurrency(scope.row.profitYoYRate) }}
             </span>
           </template>
         </el-table-column>
@@ -296,6 +305,17 @@ export default {
         profitYoY: 0,
         currentTotalSales: 0,
         currentTotalProfit: 0
+      },
+      TOOLTIP_COLORS: {
+        sales: '#409eff',
+        profit: '#009688',
+        count: '#e6a23c',
+        positive: '#67c23a',
+        negative: '#f56c6c',
+        muted: '#909399',
+        text: '#303133',
+        border: '#e4e7ed',
+        bg: 'rgba(255, 255, 255, 0.98)'
       }
     }
   },
@@ -320,8 +340,10 @@ export default {
       return this.filteredData.map(item => {
         const currentSales = this.getFieldValue(item, '销售额', 'current')
         const lastYearSales = this.getFieldValue(item, '销售额', 'last')
+        const yearBeforeLastSales = this.getFieldValue(item, '销售额', 'yearBeforeLast')
         const currentProfit = this.getFieldValue(item, '差价', 'current')
         const lastYearProfit = this.getFieldValue(item, '差价', 'last')
+        const yearBeforeLastProfit = this.getFieldValue(item, '差价', 'yearBeforeLast')
         const salesYoYRate = lastYearSales > 0 ? currentSales - lastYearSales : 0
         const profitYoYRate = lastYearProfit > 0 ? currentProfit - lastYearProfit : 0
 
@@ -338,8 +360,10 @@ export default {
           salesRange: item['销售额区间'] || '',
           currentSales,
           lastYearSales,
+          yearBeforeLastSales,
           currentProfit,
           lastYearProfit,
+          yearBeforeLastProfit,
           salesYoYRate,
           profitYoYRate
         }
@@ -385,14 +409,24 @@ export default {
       return field
     },
 
+    getYearBeforeLastField(item, keyword) {
+      const keys = Object.keys(item)
+      const field = keys.find(key => key.includes(keyword) && key.includes('前年'))
+      return field
+    },
+
     getFieldValue(item, keyword, type = 'current') {
       if (type === 'current') {
         const field = this.getCurrentYearField(item, keyword)
         return field ? (parseFloat(item[field]) || 0) : 0
-      } else {
+      } else if (type === 'last') {
         const field = this.getLastYearField(item, keyword)
         return field ? (parseFloat(item[field]) || 0) : 0
+      } else if (type === 'yearBeforeLast') {
+        const field = this.getYearBeforeLastField(item, keyword)
+        return field ? (parseFloat(item[field]) || 0) : 0
       }
+      return 0
     },
 
     initDateRange() {
@@ -556,11 +590,19 @@ export default {
       const lastYearTotalProfit = this.filteredData.reduce((sum, item) => sum + this.getFieldValue(item, '差价', 'last'), 0)
 
       // 根据customerType计算客户数：
-      // - ORG: 累加item['客户数量']
-      // - CUSTOMER: 直接使用数据行数
-      const totalCustomers = this.customerType === 'ORG'
-        ? this.filteredData.reduce((sum, item) => sum + (item['客户数量'] || 0), 0)
-        : this.filteredData.length
+      // - ORG: 按组织名称去重统计组织数量
+      // - CUSTOMER: 每行数据代表一个客户，使用数据行数
+      let totalCustomers = 0
+      if (this.customerType === 'ORG') {
+        const orgSet = new Set()
+        this.filteredData.forEach(item => {
+          const orgName = item['组织'] || ''
+          if (orgName) orgSet.add(orgName)
+        })
+        totalCustomers = orgSet.size
+      } else {
+        totalCustomers = this.filteredData.length
+      }
 
       const avgDealSize = currentTotalSales > 0 && totalCustomers > 0 ? currentTotalSales / totalCustomers : 0
 
@@ -643,48 +685,92 @@ export default {
         return
       }
 
-      const industryMap = new Map()
+      const industrySalesMap = new Map()
+      const industryCountMap = new Map()
 
       this.filteredData.forEach(item => {
         const industry = item['行业'] || '未知'
         const sales = this.getFieldValue(item, '销售额', 'current')
-        industryMap.set(industry, (industryMap.get(industry) || 0) + sales)
+        const count = this.customerType === 'ORG' ? (item['客户数量'] || 0) : 1
+        industrySalesMap.set(industry, (industrySalesMap.get(industry) || 0) + sales)
+        industryCountMap.set(industry, (industryCountMap.get(industry) || 0) + count)
       })
 
-      const industryData = Array.from(industryMap.entries())
-        .map(([name, value]) => ({ name, value }))
+      const totalSales = Array.from(industrySalesMap.values()).reduce((sum, v) => sum + v, 0)
+
+      const industryData = Array.from(industrySalesMap.entries())
+        .map(([name, value]) => ({
+          name,
+          value,
+          count: industryCountMap.get(name) || 0,
+          percent: totalSales > 0 ? (value / totalSales * 100) : 0
+        }))
         .sort((a, b) => b.value - a.value)
+
+      const tooltipColors = this.TOOLTIP_COLORS
+      const customerType = this.customerType
+      const formatWan = this.formatWan.bind(this)
 
       const option = {
         tooltip: {
           trigger: 'item',
-          formatter: (params) => {
-            return `${params.name}: ${this.formatWan(params.value)}万`
+          backgroundColor: tooltipColors.bg,
+          borderColor: tooltipColors.border,
+          borderWidth: 1,
+          padding: [12, 16],
+          textStyle: {
+            color: tooltipColors.text,
+            fontSize: 13
+          },
+          formatter: function(params) {
+            const data = industryData.find(d => d.name === params.name)
+            if (!data) return ''
+            const c = tooltipColors
+            const countLabel = customerType === 'ORG' ? '组织数' : '客户数'
+            const html = `
+              <div style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${c.border};">
+                ${data.name}
+              </div>
+              <div style="margin-bottom:6px;">
+                <span style="color:${c.sales};font-weight:600;">销售额</span>
+                <span style="margin-left:10px;font-weight:bold;">${formatWan(data.value)} 万</span>
+                <span style="margin-left:8px;color:${c.muted};">占比</span>
+                <span style="margin-left:4px;font-weight:bold;">${data.percent.toFixed(1)}%</span>
+              </div>
+              <div style="margin-bottom:4px;">
+                <span style="color:${c.count};font-weight:600;">${countLabel}</span>
+                <span style="margin-left:10px;font-weight:bold;">${data.count}</span>
+              </div>
+            `
+            return html
           }
         },
         legend: {
           orient: 'vertical',
           left: 'left',
-          top: 'middle'
+          top: 'middle',
+          textStyle: {
+            color: '#606266'
+          }
         },
         series: [
           {
             name: '行业分布',
             type: 'pie',
-            radius: '60%',
+            radius: '55%',
             center: ['60%', '50%'],
             data: industryData,
             emphasis: {
               itemStyle: {
-                shadowBlur: 10,
+                shadowBlur: 15,
                 shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                shadowColor: 'rgba(0, 0, 0, 0.3)',
+                borderWidth: 2,
+                borderColor: '#fff'
               }
             },
             label: {
-              formatter: (params) => {
-                return `${params.name}: ${this.formatWan(params.value)}万`
-              }
+              show: false
             }
           }
         ]
@@ -704,11 +790,13 @@ export default {
       const rangeOrder = ['300万以上', '100-300万', '50-100万', '20-50万', '10-20万', '10万以下']
       const salesMap = new Map()
       const profitMap = new Map()
-      const countMap = new Map()
+      const orgCountMap = new Map()
+      const customerCountMap = new Map()
       rangeOrder.forEach(r => {
         salesMap.set(r, 0)
         profitMap.set(r, 0)
-        countMap.set(r, 0)
+        orgCountMap.set(r, new Set())
+        customerCountMap.set(r, 0)
       })
 
       this.filteredData.forEach(item => {
@@ -716,29 +804,84 @@ export default {
         if (salesMap.has(range)) {
           const sales = this.getFieldValue(item, '销售额', 'current')
           const profit = this.getFieldValue(item, '差价', 'current')
-          const count = item['客户数量'] || 0
+          const orgName = item['组织'] || ''
           salesMap.set(range, salesMap.get(range) + sales)
           profitMap.set(range, profitMap.get(range) + profit)
-          countMap.set(range, countMap.get(range) + count)
+          if (orgName) orgCountMap.get(range).add(orgName)
+          // 客户模式：每行数据代表一个客户，统计行数+1
+          // 组织模式：累加每个组织的客户数量
+          if (this.customerType === 'CUSTOMER') {
+            customerCountMap.set(range, customerCountMap.get(range) + 1)
+          } else {
+            customerCountMap.set(range, customerCountMap.get(range) + (item['客户数量'] || 0))
+          }
         }
       })
 
+      const totalSales = Array.from(salesMap.values()).reduce((sum, v) => sum + v, 0)
+      const totalOrgCount = Array.from(orgCountMap.values()).reduce((sum, set) => sum + set.size, 0)
+      const totalCustomerCount = Array.from(customerCountMap.values()).reduce((sum, v) => sum + v, 0)
+      const totalCount = customerType === 'ORG' ? totalOrgCount : totalCustomerCount
+      const tooltipColors = this.TOOLTIP_COLORS
+      const customerType = this.customerType
+      const formatWan = this.formatWan.bind(this)
+
       const option = {
         tooltip: {
-          trigger: 'axis',
-          axisPointer: { type: 'shadow' },
-          formatter: (params) => {
-            if (!params || params.length === 0) return ''
-            const range = params[0].name
-            const sales = params[0]?.value || 0
-            const profit = params[1]?.value || 0
-            const count = params[2]?.value || 0
-            return `${range}<br/>销售额: ${this.formatWan(sales)}万<br/>差价: ${this.formatWan(profit)}万<br/>客户数: ${count}`
+          trigger: 'item',
+          backgroundColor: tooltipColors.bg,
+          borderColor: tooltipColors.border,
+          borderWidth: 1,
+          padding: [12, 16],
+          textStyle: {
+            color: tooltipColors.text,
+            fontSize: 13
+          },
+          formatter: function(params) {
+            if (!params) return ''
+            const c = tooltipColors
+            const range = params.name
+            const orgSet = orgCountMap.get(range)
+            const customerCount = customerCountMap.get(range) || 0
+            const rangeData = {
+              sales: salesMap.get(range) || 0,
+              profit: profitMap.get(range) || 0,
+              count: customerType === 'ORG' ? (orgSet ? orgSet.size : 0) : customerCount
+            }
+            const salesPercent = totalSales > 0 ? (rangeData.sales / totalSales * 100) : 0
+            const countPercent = totalCount > 0 ? (rangeData.count / totalCount * 100) : 0
+            const countLabel = customerType === 'ORG' ? '组织数' : '客户数'
+
+            const html = `
+              <div style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${c.border};">
+                ${range}
+              </div>
+              <div style="margin-bottom:8px;">
+                <span style="color:${c.sales};font-weight:600;">销售额</span>
+                <span style="margin-left:10px;font-weight:bold;">${formatWan(rangeData.sales)} 万</span>
+                <span style="margin-left:8px;color:${c.muted};">占比</span>
+                <span style="margin-left:4px;font-weight:bold;">${salesPercent.toFixed(1)}%</span>
+              </div>
+              <div style="margin-bottom:8px;">
+                <span style="color:${c.profit};font-weight:600;">差价</span>
+                <span style="margin-left:10px;font-weight:bold;">${formatWan(rangeData.profit)} 万</span>
+              </div>
+              <div>
+                <span style="color:${c.count};font-weight:600;">${countLabel}</span>
+                <span style="margin-left:10px;font-weight:bold;">${rangeData.count}</span>
+                <span style="margin-left:8px;color:${c.muted};">占比</span>
+                <span style="margin-left:4px;font-weight:bold;">${countPercent.toFixed(1)}%</span>
+              </div>
+            `
+            return html
           }
         },
         legend: {
           data: ['销售额', '差价', '客户数'],
-          bottom: 0
+          bottom: 0,
+          textStyle: {
+            color: '#606266'
+          }
         },
         grid: {
           left: '3%',
@@ -748,16 +891,22 @@ export default {
         },
         xAxis: {
           type: 'category',
-          data: rangeOrder
+          data: rangeOrder,
+          axisLabel: {
+            color: '#606266',
+            fontSize: 12
+          }
         },
         yAxis: [
           {
             type: 'value',
-            name: '金额(万)'
-          },
-          {
-            type: 'value',
-            name: '客户数'
+            name: '金额(万)',
+            nameTextStyle: {
+              color: '#909399'
+            },
+            axisLabel: {
+              color: '#606266'
+            }
           }
         ],
         series: [
@@ -765,25 +914,37 @@ export default {
             name: '销售额',
             type: 'bar',
             data: rangeOrder.map(r => salesMap.get(r)),
-            itemStyle: { color: '#409eff' }
+            itemStyle: { color: '#409eff' },
+            barWidth: '35%'
           },
           {
             name: '差价',
             type: 'bar',
             data: rangeOrder.map(r => profitMap.get(r)),
-            itemStyle: { color: '#009688' }
+            itemStyle: { color: '#009688' },
+            barWidth: '35%'
           },
           {
             name: '客户数',
             type: 'bar',
-            yAxisIndex: 1,
-            data: rangeOrder.map(r => countMap.get(r)),
-            itemStyle: { color: '#e6a23c' }
+            yAxisIndex: 0,
+            data: rangeOrder.map(r => customerType === 'ORG' ? (orgCountMap.get(r)?.size || 0) : (customerCountMap.get(r) || 0)),
+            itemStyle: { color: '#e6a23c' },
+            barWidth: '20%'
           }
         ]
       }
 
       this.rangeDistChart.setOption(option)
+
+      // 点击柱状图筛选当前区间数据
+      this.rangeDistChart.off('click')
+      this.rangeDistChart.on('click', (params) => {
+        if (params.name && params.seriesName === '销售额') {
+          this.selectedRanges = [params.name]
+          this.applyFilters()
+        }
+      })
     },
 
     updateHeatmapChart() {
@@ -802,6 +963,8 @@ export default {
 
       const rawData = []
       let totalSales = 0
+      let totalOrgCount = 0
+      let totalCustomerCount = 0
 
       industries.forEach(industry => {
         ranges.forEach(range => {
@@ -810,21 +973,65 @@ export default {
             (item['销售额区间'] || '') === range
           )
           const sales = items.reduce((sum, item) => sum + this.getFieldValue(item, '销售额', 'current'), 0)
+          const orgSet = new Set()
+          let customerCount = 0
+          items.forEach(item => {
+            const orgName = item['组织'] || ''
+            if (orgName) orgSet.add(orgName)
+            customerCount += item['客户数量'] || 0
+          })
           totalSales += sales
-          rawData.push({ range, industry, sales })
+          totalOrgCount += orgSet.size
+          totalCustomerCount += customerCount
+          rawData.push({ range, industry, sales, orgCount: orgSet.size, customerCount })
         })
       })
 
+      const totalCount = this.customerType === 'ORG' ? totalOrgCount : totalCustomerCount
+      const tooltipColors = this.TOOLTIP_COLORS
+      const customerType = this.customerType
+      const formatWan = this.formatWan.bind(this)
+
       const heatmapData = rawData.map(item => {
         const percent = totalSales > 0 ? (item.sales / totalSales * 100) : 0
-        return [item.range, item.industry, item.sales, percent]
+        return [item.range, item.industry, item.sales, percent, item.orgCount, item.customerCount]
       })
 
       const option = {
         tooltip: {
-          formatter: (params) => {
-            const [range, industry, sales, percent] = params.value
-            return `${industry} - ${range}<br/>销售额: ${this.formatWan(sales)}万<br/>占比: ${percent.toFixed(1)}%`
+          backgroundColor: tooltipColors.bg,
+          borderColor: tooltipColors.border,
+          borderWidth: 1,
+          padding: [12, 16],
+          textStyle: {
+            color: tooltipColors.text,
+            fontSize: 13
+          },
+          formatter: function(params) {
+            const [range, industry, sales, percent, orgCount, customerCount] = params.value
+            const c = tooltipColors
+            const count = customerType === 'ORG' ? orgCount : customerCount
+            const countPercent = totalCount > 0 ? (count / totalCount * 100) : 0
+            const countLabel = customerType === 'ORG' ? '组织数' : '客户数'
+
+            const html = `
+              <div style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${c.border};">
+                ${industry} - ${range}
+              </div>
+              <div style="margin-bottom:8px;">
+                <span style="color:${c.sales};font-weight:600;">销售额</span>
+                <span style="margin-left:10px;font-weight:bold;">${formatWan(sales)} 万</span>
+                <span style="margin-left:8px;color:${c.muted};">占比</span>
+                <span style="margin-left:4px;font-weight:bold;">${percent.toFixed(1)}%</span>
+              </div>
+              <div>
+                <span style="color:${c.count};font-weight:600;">${countLabel}</span>
+                <span style="margin-left:10px;font-weight:bold;">${count}</span>
+                <span style="margin-left:8px;color:${c.muted};">占比</span>
+                <span style="margin-left:4px;font-weight:bold;">${countPercent.toFixed(1)}%</span>
+              </div>
+            `
+            return html
           }
         },
         grid: {
@@ -874,6 +1081,15 @@ export default {
       }
 
       this.heatmapChart.setOption(option)
+
+      // 点击热力图联动筛选行业和区间
+      this.heatmapChart.off('click')
+      this.heatmapChart.on('click', (params) => {
+        const [range, industry] = params.value
+        this.selectedRanges = [range]
+        this.selectedIndustries = [industry]
+        this.applyFilters()
+      })
     },
 
     updateRankChart() {
@@ -884,24 +1100,71 @@ export default {
         return
       }
 
-      // 根据customerType选择正确的客户名称字段
       const nameField = this.customerType === 'ORG' ? '组织' : '客户'
 
       const sortedData = [...this.filteredData]
         .map(item => ({
           name: item[nameField] || '',
-          value: this.getFieldValue(item, '销售额', 'current')
+          currentSales: this.getFieldValue(item, '销售额', 'current'),
+          lastSales: this.getFieldValue(item, '销售额', 'last'),
+          yearBeforeLastSales: this.getFieldValue(item, '销售额', 'yearBeforeLast'),
+          currentProfit: this.getFieldValue(item, '差价', 'current'),
+          lastProfit: this.getFieldValue(item, '差价', 'last'),
+          yearBeforeLastProfit: this.getFieldValue(item, '差价', 'yearBeforeLast')
         }))
-        .sort((a, b) => b.value - a.value)
+        .sort((a, b) => b.currentSales - a.currentSales)
         .slice(0, 10)
+
+      const tooltipColors = this.TOOLTIP_COLORS
+      const formatWan = this.formatWan.bind(this)
 
       const option = {
         tooltip: {
-          trigger: 'axis',
+          trigger: 'item',
           axisPointer: { type: 'shadow' },
-          formatter: (params) => {
-            const data = sortedData[params[0].dataIndex]
-            return `${data.name}<br/>销售额: ${this.formatWan(data.value)}万`
+          backgroundColor: tooltipColors.bg,
+          borderColor: tooltipColors.border,
+          borderWidth: 1,
+          padding: [12, 16],
+          textStyle: {
+            color: tooltipColors.text,
+            fontSize: 13
+          },
+          formatter: function(params) {
+            if (!params) return ''
+            const idx = params.dataIndex
+            if (idx < 0 || idx >= sortedData.length) return ''
+            const data = sortedData[idx]
+
+            const salesDiff = data.currentSales - data.lastSales
+            const profitDiff = data.currentProfit - data.lastProfit
+
+            const html = `
+              <div style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${tooltipColors.border};">
+                ${data.name}
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <tr style="border-bottom:1px solid ${tooltipColors.border};">
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">当期销售额</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;">${formatWan(data.currentSales)}万</td>
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">当期差价</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;">${formatWan(data.currentProfit)}万</td>
+                </tr>
+                <tr style="border-bottom:1px solid ${tooltipColors.border};">
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">去年同期</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;">${formatWan(data.lastSales)}万</td>
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">去年同期</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;">${formatWan(data.lastProfit)}万</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">差值</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;color:${salesDiff >= 0 ? tooltipColors.negative : tooltipColors.positive};">${salesDiff >= 0 ? '+' : ''}${formatWan(salesDiff)}万</td>
+                  <td style="padding:4px 8px;color:${tooltipColors.muted};">差值</td>
+                  <td style="padding:4px 8px;font-weight:bold;text-align:right;color:${profitDiff >= 0 ? tooltipColors.negative : tooltipColors.positive};">${profitDiff >= 0 ? '+' : ''}${formatWan(profitDiff)}万</td>
+                </tr>
+              </table>
+            `
+            return html
           }
         },
         grid: {
@@ -915,7 +1178,7 @@ export default {
           type: 'value',
           name: '销售额(万)',
           axisLabel: {
-            formatter: (value) => {
+            formatter: function(value) {
               return Math.round(value / 10000)
             }
           },
@@ -923,15 +1186,15 @@ export default {
         },
         yAxis: {
           type: 'category',
-          data: sortedData.map(d => d.name).reverse(),
+          data: sortedData.map(d => d.name),
           inverse: true
         },
         series: [{
           name: '销售额',
           type: 'bar',
-          data: sortedData.map(d => d.value).reverse(),
+          data: sortedData.map(d => d.currentSales),
           itemStyle: {
-            color: (params) => {
+            color: function(params) {
               const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#ffb6c1']
               return colors[params.dataIndex % colors.length]
             }
@@ -939,7 +1202,9 @@ export default {
           label: {
             show: true,
             position: 'right',
-            formatter: (params) => `${this.formatWan(params.value)}万`
+            formatter: function(params) {
+              return formatWan(params.value) + '万'
+            }
           },
           barWidth: '60%'
         }]
@@ -979,9 +1244,9 @@ export default {
 
     formatPercent(value) {
       if (value == null || isNaN(value)) return '0%'
-      return value.toFixed(1) + '%'
+      const percent = value / 10000
+      return Math.abs(percent).toFixed(1) + '%'
     },
-
     formatCurrency(value) {
       if (value == null || isNaN(value)) return '0'
       const wan = value / 10000
@@ -1000,10 +1265,28 @@ export default {
 
 .filter-bar {
   background: #fff;
-  padding: 15px;
-  border-radius: 4px;
+  padding: 12px 16px;
+  border-radius: 8px;
   margin-bottom: 15px;
   box-shadow: 0 2px 4px rgba(0,0,0,.08);
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-radio-button) {
+    .el-radio-button__inner {
+      border-radius: 4px;
+    }
+    &:first-child .el-radio-button__inner {
+      border-top-left-radius: 4px;
+      border-bottom-left-radius: 4px;
+    }
+    &:last-child .el-radio-button__inner {
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+  }
 }
 
 .filter-row {
@@ -1170,6 +1453,26 @@ export default {
 
 :deep(.el-table) {
   font-size: 13px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f5f7fa !important;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-table td.el-table__cell) {
+  padding: 12px 0;
+}
+
+:deep(.table-row-hover:hover > td.el-table__cell) {
+  background: #ecf5ff !important;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
+  background: #fafafa !important;
 }
 
 :deep(.el-card__header) {

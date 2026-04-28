@@ -21,16 +21,33 @@ router.beforeEach(async(to, from, next) => {
     } else {
       const hasRoles = store.getters.roles && store.getters.roles.length > 0
       if (hasRoles) {
-        next()
+        // 检查目标路由是否存在
+        const targetRoute = router.getRoutes().find(r => r.path === to.path)
+        if (!targetRoute) {
+          // 路由不存在，可能是刷新后动态路由丢失，需要重新获取菜单并添加路由
+          try {
+            const { menus } = await store.dispatch('user/getInfo')
+            const accessRoutes = await store.dispatch('permission/generateRoutes', { roles: store.getters.roles, menus })
+            accessRoutes.forEach((route) => {
+              router.addRoute(route)
+            })
+            next({ path: to.path })
+          } catch (error) {
+            await store.dispatch('user/resetToken')
+            ElMessage.error('获取路由信息失败')
+            next(`/login?redirect=${to.path}`)
+          }
+        } else {
+          next()
+        }
       } else {
         try {
           const { roles, menus } = await store.dispatch('user/getInfo')
           const accessRoutes = await store.dispatch('permission/generateRoutes', { roles, menus })
-          accessRoutes.forEach((route, index) => {
+          accessRoutes.forEach((route) => {
             router.addRoute(route)
           })
-          const redirect = to.query.redirect || '/dashboard'
-          next({ path: redirect, replace: true })
+          next({ path: to.path })
         } catch (error) {
           await store.dispatch('user/resetToken')
           ElMessage.error(error || '获取用户信息失败')

@@ -44,21 +44,27 @@ export default {
 .sidebar-logo-container {
   position: relative;
   width: 100%;
-  height: 50px;
-  line-height: 50px;
-  background: #2b2f3a;
+  height: 60px;
+  line-height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   text-align: center;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
 
   & .sidebar-logo-link {
     height: 100%;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 20px;
 
     & .sidebar-logo {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       vertical-align: middle;
-      margin-right: 12px;
+      border-radius: 8px;
     }
 
     & .sidebar-title {
@@ -66,16 +72,20 @@ export default {
       margin: 0;
       color: #fff;
       font-weight: 600;
-      line-height: 50px;
-      font-size: 14px;
+      font-size: 15px;
       font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
       vertical-align: middle;
+      letter-spacing: 0.5px;
     }
   }
 
   &.collapse {
     .sidebar-logo {
-      margin-right: 0px;
+      margin-right: 0;
+    }
+
+    .sidebar-title {
+      display: none;
     }
   }
 }

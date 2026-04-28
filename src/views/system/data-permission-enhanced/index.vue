@@ -58,9 +58,9 @@
             <div class="scope-selection">
               <div class="scope-title">数据范围</div>
               <el-radio-group v-model="permissionScope" @change="handleScopeChange">
-                <el-radio label="specified">指定数据</el-radio>
-                <el-radio label="all">全部数据</el-radio>
-                <el-radio label="currentUser">仅当前用户</el-radio>
+                <el-radio value="specified">指定数据</el-radio>
+                <el-radio value="all">全部数据</el-radio>
+                <el-radio value="currentUser">仅当前用户</el-radio>
               </el-radio-group>
             </div>
 

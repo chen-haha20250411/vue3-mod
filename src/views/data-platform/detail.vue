@@ -676,7 +676,7 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/data-platform')
+      this.$router.push('/data-platform/index')
     },
 
     formatCurrency(value) {

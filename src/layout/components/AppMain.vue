@@ -2,7 +2,7 @@
   <section class="app-main">
     <transition name="fade-transform" mode="out-in">
       <keep-alive :include="cachedViews">
-        <router-view :key="key" />
+        <router-view :key="routePath" />
       </keep-alive>
     </transition>
   </section>
@@ -15,7 +15,7 @@ export default {
     cachedViews() {
       return this.$store.state.tagsView.cachedViews
     },
-    key() {
+    routePath() {
       return this.$route.path
     }
   }
@@ -29,6 +29,7 @@ export default {
   width: 100%;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(180deg, #f5f7fa 0%, #fafbfc 100%);
 }
 
 .fixed-header+.app-main {

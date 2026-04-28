@@ -14,11 +14,11 @@
       <div class="filter-section">
         <div class="filter-label">统计维度：</div>
         <el-radio-group v-model="summaryDimension" size="small" @change="handleDimensionChange">
-          <el-radio-button label="staff">按业务员</el-radio-button>
-          <el-radio-button label="parentDept">按父级部门</el-radio-button>
-          <el-radio-button label="department">按部门</el-radio-button>
-          <el-radio-button label="business">按业务线</el-radio-button>
-          <el-radio-button label="branch">按分支机构</el-radio-button>
+          <el-radio-button value="staff">按业务员</el-radio-button>
+          <el-radio-button value="parentDept">按父级部门</el-radio-button>
+          <el-radio-button value="department">按部门</el-radio-button>
+          <el-radio-button value="business">按业务线</el-radio-button>
+          <el-radio-button value="branch">按分支机构</el-radio-button>
         </el-radio-group>
       </div>
     </div>
@@ -371,11 +371,12 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 24px;
+    padding: 20px 24px;
     background: #fff;
-    border-radius: 4px;
-    border: 1px solid #ebeef5;
+    border-radius: 14px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
   .filter-section {
@@ -386,7 +387,7 @@ export default {
 
   .filter-label {
     font-size: 14px;
-    color: #606266;
+    color: #5a6275;
     font-weight: 500;
     flex-shrink: 0;
     padding-right: 8px;
@@ -398,44 +399,56 @@ export default {
   }
 
   .summary-section {
-    margin-top: 20px;
-    padding: 20px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    border: 1px solid #ebeef5;
+    margin-top: 24px;
+    padding: 24px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #f0f2f7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
   .summary-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    color: #303133;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e4e7ed;
+    color: #1a1a2e;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 18px;
+      background: linear-gradient(180deg, #e6a23c, #d99a3a);
+      border-radius: 2px;
+    }
   }
 
   .summary-content {
     display: flex;
     flex-wrap: wrap;
-    gap: 30px;
+    gap: 32px;
   }
 
   .summary-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
   }
 
   .summary-label {
     font-size: 14px;
-    color: #606266;
+    color: #909399;
     font-weight: 500;
   }
 
   .summary-value {
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
+    color: #1a1a2e;
 
     &.sales {
       color: #f56c6c;

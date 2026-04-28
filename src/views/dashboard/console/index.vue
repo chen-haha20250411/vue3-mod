@@ -50,9 +50,9 @@
               </h3>
               <div class="card-actions">
                 <el-radio-group v-model="timeRange" size="small">
-                  <el-radio-button label="week">周</el-radio-button>
-                  <el-radio-button label="month">月</el-radio-button>
-                  <el-radio-button label="year">年</el-radio-button>
+                  <el-radio-button value="week">周</el-radio-button>
+                  <el-radio-button value="month">月</el-radio-button>
+                  <el-radio-button value="year">年</el-radio-button>
                 </el-radio-group>
               </div>
             </div>

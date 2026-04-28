@@ -8,19 +8,19 @@
       </app-link>
     </template>
 
-    <el-submenu v-else :index="resolvePath()" popper-append-to-body>
+    <el-sub-menu v-else :index="resolvePath()" popper-append-to-body>
       <template #title>
         <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
       <sidebar-item
-        v-for="child in item.children"
+        v-for="child in (item.children || item.subMenuList)"
         :key="child.path"
         :is-nest="true"
         :item="child"
         :base-path="resolvePath()"
         class="nest-menu"
       />
-    </el-submenu>
+    </el-sub-menu>
   </div>
 </template>
 
@@ -51,19 +51,31 @@ export default {
   },
   methods: {
     resolvePath() {
+      // 如果是外部链接，直接返回
+      if (this.item.meta?.external) {
+        return this.item.path
+      }
+      // 如果是绝对路径，直接返回
       if (this.item.path && this.item.path.startsWith('/')) {
         return this.item.path
       }
-      if (this.basePath && this.basePath.startsWith('/')) {
+      // 如果是外部 URL
+      if (this.item.path && (this.item.path.startsWith('http://') || this.item.path.startsWith('https://'))) {
+        return this.item.path
+      }
+      // 否则拼接路径
+      if (this.basePath) {
         return resolvePathUtil(this.basePath, this.item.path)
       }
-      return this.item.path
+      return this.item.path || '/'
     },
     hasChildren(item) {
-      if (!item.children || item.children.length === 0) {
+      // 支持 children 和 subMenuList 两种格式
+      const children = item.children || item.subMenuList || []
+      if (children.length === 0) {
         return false
       }
-      const visibleChildren = item.children.filter(child => !child.hidden)
+      const visibleChildren = children.filter(child => !child.hidden)
       return visibleChildren.length > 0
     }
   }

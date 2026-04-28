@@ -112,6 +112,26 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/data-platform',
+    component: Layout,
+    hidden: true,
+    redirect: '/data-platform/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/data-platform/index'),
+        name: 'SalesOverview',
+        meta: { title: '销售数据总览', hidden: true }
+      },
+      {
+        path: 'detail',
+        component: () => import('@/views/data-platform/detail'),
+        name: 'SalesDetail',
+        meta: { title: '销售详情', hidden: true }
+      }
+    ]
+  },
+  {
     path: '/system',
     component: Layout,
     hidden: true,

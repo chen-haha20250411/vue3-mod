@@ -2,10 +2,10 @@
   <div class="sales-profit-chart-container">
     <div class="chart-filter">
       <el-radio-group v-model="timeDimension" size="small" @change="handleDimensionChange">
-        <el-radio-button label="week">周</el-radio-button>
-        <el-radio-button label="month">月度</el-radio-button>
-        <el-radio-button label="quarter">季度</el-radio-button>
-        <el-radio-button label="year">年度</el-radio-button>
+        <el-radio-button value="week">周</el-radio-button>
+        <el-radio-button value="month">月度</el-radio-button>
+        <el-radio-button value="quarter">季度</el-radio-button>
+        <el-radio-button value="year">年度</el-radio-button>
       </el-radio-group>
     </div>
     <div ref="chartRef" :style="{height: chartHeight, width: '100%'}" />

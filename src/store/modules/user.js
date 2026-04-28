@@ -136,7 +136,8 @@ const actions = {
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
       getUserInfo().then(response => {
-        const data = response
+        // 处理外层包装的数据结构
+        const data = response.data || response
 
         if (!data) {
           reject('Verification failed, please Login again.')

@@ -171,7 +171,7 @@
         </el-form-item>
         <el-form-item label="功能角色">
           <el-radio-group v-model="temp.roleInfoId">
-            <el-radio v-for="role in roleList" :key="role.roleInfoId" :label="role.roleInfoId">
+            <el-radio v-for="role in roleList" :key="role.roleInfoId" :value="role.roleInfoId">
               {{ role.roleName }}
             </el-radio>
           </el-radio-group>

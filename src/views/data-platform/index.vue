@@ -40,9 +40,22 @@ export default {
 
 <style lang="scss" scoped>
 .data-platform-container {
-  padding: 20px;
-  background-color: rgb(240, 242, 245);
+  padding: 24px;
+  background: linear-gradient(180deg, #f5f7fa 0%, #fafbfc 100%);
   min-height: calc(100vh - 84px);
+}
+
+.data-platform-card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+
+  :deep(.el-card__header) {
+    padding: 20px 24px;
+    background: #fff;
+    border-bottom: 1px solid #f0f2f7;
+  }
 }
 
 .page-header {
@@ -71,12 +84,56 @@ export default {
   align-items: center;
 
   span {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(180deg, #667eea, #764ba2);
+      border-radius: 2px;
+    }
   }
 }
 
+:deep(.el-tabs__header) {
+  margin: 0;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 500;
+  color: #909399;
+  padding: 0 24px;
+  height: 48px;
+  line-height: 48px;
+
+  &.is-active {
+    color: #667eea;
+    font-weight: 600;
+  }
+
+  &:hover {
+    color: #667eea;
+  }
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 3px 3px 0 0;
+}
+
 :deep(.el-tabs__content) {
-  padding-top: 10px;
+  padding: 24px;
 }
 </style>
